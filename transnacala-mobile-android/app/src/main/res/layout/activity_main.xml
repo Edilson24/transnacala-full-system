@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="28dp"
+    tools:context=".MainActivity">
+
+    <!-- Hero Card / Branding Header -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="36dp"
+        app:cardBackgroundColor="@color/surface"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="2dp"
+        app:strokeColor="@color/card_stroke"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="32dp">
+
+            <!-- App Logo Icon Badge -->
+            <FrameLayout
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:background="@drawable/bg_route_icon"
+                android:padding="16dp">
+
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="TransNacala Logo"
+                    android:src="@drawable/ic_directions_bus"
+                    app:tint="@android:color/white" />
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/txtTituloApp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:text="TransNacala"
+                android:textColor="@color/text_primary"
+                android:textSize="30sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="Rede de Transportes de Nacala"
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp" />
+
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Botão Principal: Ver Rotas -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnRotas"
+        android:layout_width="match_parent"
+        android:layout_height="58dp"
+        android:text="Ver Rotas e Tarifas"
+        android:textAllCaps="false"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:backgroundTint="@color/primary"
+        app:cornerRadius="16dp"
+        app:elevation="2dp"
+        app:icon="@drawable/ic_directions_bus"
+        app:iconGravity="textStart"
+        app:iconPadding="10dp"
+        app:iconTint="@android:color/white" />
+
+    <!-- Botão Secundário: Área de Administração -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnAdmin"
+        style="@style/Widget.Material3.Button.OutlinedButton"
+        android:layout_width="match_parent"
+        android:layout_height="58dp"
+        android:layout_marginTop="14dp"
+        android:text="Área do Administrador"
+        android:textAllCaps="false"
+        android:textColor="@color/primary"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:cornerRadius="16dp"
+        app:icon="@drawable/ic_admin_panel"
+        app:iconGravity="textStart"
+        app:iconPadding="10dp"
+        app:iconTint="@color/primary"
+        app:strokeColor="@color/primary"
+        app:strokeWidth="1.5dp" />
+
+</LinearLayout>

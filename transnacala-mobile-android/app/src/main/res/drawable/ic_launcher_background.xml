@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Fundo Azul Claro Suave de Mapa -->
+    <path
+        android:fillColor="#EFF4FC"
+        android:pathData="M0,0h108v108h-108z" />
+
+    <!-- Malha de Ruas e Rotas Urbana -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M-10,32 L118,96"
+        android:strokeColor="#D3E2F7"
+        android:strokeWidth="7" />
+
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M22,-10 L102,118"
+        android:strokeColor="#E1ECFA"
+        android:strokeWidth="5" />
+
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M-10,78 L88,-20"
+        android:strokeColor="#E1ECFA"
+        android:strokeWidth="5" />
+
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M38,118 L118,38"
+        android:strokeColor="#D3E2F7"
+        android:strokeWidth="6" />
+
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M-10,12 L118,12"
+        android:strokeColor="#E6F0FB"
+        android:strokeWidth="3" />
+
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M-10,96 L118,96"
+        android:strokeColor="#E6F0FB"
+        android:strokeWidth="3" />
+
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M12,-10 L12,118"
+        android:strokeColor="#E6F0FB"
+        android:strokeWidth="3" />
+
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M96,-10 L96,118"
+        android:strokeColor="#E6F0FB"
+        android:strokeWidth="3" />
+
+    <!-- Blocos Urbanos Suaves -->
+    <path
+        android:fillColor="#E3EEFB"
+        android:pathData="M24,36 L44,26 L54,46 L34,56 Z" />
+
+    <path
+        android:fillColor="#E5F0FC"
+        android:pathData="M66,66 L86,56 L96,76 L76,86 Z" />
+
+</vector>

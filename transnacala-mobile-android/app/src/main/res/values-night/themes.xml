@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Cores principais -->
+    <color name="primary">#64B5F6</color>
+    <color name="primary_dark">#90CAF9</color>
+    <color name="primary_light">#173A5E</color>
+
+    <!-- Fundo -->
+    <color name="background">#10141C</color>
+    <color name="surface">#18202B</color>
+    <color name="card_background">#1C2532</color>
+
+    <!-- Textos -->
+    <color name="text_primary">#F8FAFC</color>
+    <color name="text_secondary">#CBD5E1</color>
+    <color name="text_muted">#94A3B8</color>
+
+    <!-- Elementos -->
+    <color name="divider">#334155</color>
+    <color name="icon_background">#263A55</color>
+
+    <!-- Tarifa -->
+    <color name="fare_background">#203A5C</color>
+    <color name="fare_text">#90CAF9</color>
+
+    <!-- Estados -->
+    <color name="success">#4ADE80</color>
+    <color name="warning">#FBBF24</color>
+    <color name="danger">#F87171</color>
+
+    <!-- Rotas -->
+    <color name="route_blue">#60A5FA</color>
+    <color name="route_green">#4ADE80</color>
+    <color name="route_orange">#FBBF24</color>
+    <color name="route_purple">#A78BFA</color>
+    <color name="route_teal">#2DD4BF</color>
+
+</resources>
