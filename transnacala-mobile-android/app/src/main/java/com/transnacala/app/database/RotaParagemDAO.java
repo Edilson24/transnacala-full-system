@@ -52,7 +52,7 @@ public class RotaParagemDAO {
                         "FROM paragem p " +
                         "INNER JOIN rota_paragem rp " +
                         "ON p.id = rp.paragem_id " +
-                        "WHERE rp.rota_id = ? " +
+                        "WHERE rp.rota_id = ? AND p.ativo = 1 " +
                         "ORDER BY rp.ordem ASC";
 
         Cursor cursor = db.rawQuery(

@@ -6,5 +6,5 @@ cloudflared tunnel --url http://localhost:8000
 cloudflared tunnel --protocol http2 --url http://localhost:8000
 
 Para criar un subdominio específico para tu aplicación, puedes usar el siguiente comando:
-lt --port 8000 --subdomain lory-lifter-api
-lt --port 8000 --subdomain lory-lifter-api --local-host 127.0.0.1
+lt --port 8000 --subdomain transnacala-api
+lt --port 8000 --subdomain transnacala-api --local-host 127.0.0.1

@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "transnacala-api"
+version = "0.1.0"
+description = "REST API for the TransNacala transport system"
+requires-python = ">=3.11"
+dependencies = [
+    "alembic>=1.13,<2",
+    "fastapi>=0.115,<1",
+    "pydantic-settings>=2.6,<3",
+    "pymysql>=1.1,<2",
+    "sqlalchemy>=2.0,<3",
+    "uvicorn[standard]>=0.30,<1",
+]
+
+[project.optional-dependencies]
+test = [
+    "httpx>=0.27,<1",
+    "pytest>=8,<9",
+]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.setuptools.package-data]
+app = ["openapi.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

@@ -1,0 +1,8 @@
+As diretrizes e o plano compartilhado de execução estão na raiz de
+trans-nacala-project: PLANO-EXECUCAO.md.
+
+O script inicial para executar no MySQL Workbench está em:
+trans-nacala-project/database/mysql_schema.sql
+
+Consulte o plano antes de iniciar uma tarefa. Atualize os checkboxes somente
+quando os critérios de aceitação da tarefa estiverem concluídos e verificados.

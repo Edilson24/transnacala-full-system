@@ -42,7 +42,7 @@ public class ParagemDAO {
         SQLiteDatabase db = databaseHelper.getReadableDatabase();
 
         Cursor cursor = db.rawQuery(
-                "SELECT * FROM paragem WHERE nome = ? LIMIT 1",
+                "SELECT * FROM paragem WHERE nome = ? AND ativo = 1 LIMIT 1",
                 new String[]{nome}
         );
 
@@ -57,6 +57,8 @@ public class ParagemDAO {
                             cursor.getColumnIndexOrThrow("id")
                     )
             );
+            paragem.setRemoteId(cursor.getString(cursor.getColumnIndexOrThrow("remote_id")));
+            paragem.setAtivo(cursor.getInt(cursor.getColumnIndexOrThrow("ativo")) == 1);
 
             paragem.setNome(
                     cursor.getString(
@@ -91,7 +93,7 @@ public class ParagemDAO {
         SQLiteDatabase db = databaseHelper.getReadableDatabase();
 
         Cursor cursor = db.rawQuery(
-                "SELECT * FROM paragem ORDER BY nome",
+                "SELECT * FROM paragem WHERE ativo = 1 ORDER BY nome",
                 null
         );
 
@@ -104,6 +106,8 @@ public class ParagemDAO {
                             cursor.getColumnIndexOrThrow("id")
                     )
             );
+            paragem.setRemoteId(cursor.getString(cursor.getColumnIndexOrThrow("remote_id")));
+            paragem.setAtivo(cursor.getInt(cursor.getColumnIndexOrThrow("ativo")) == 1);
 
             paragem.setNome(
                     cursor.getString(

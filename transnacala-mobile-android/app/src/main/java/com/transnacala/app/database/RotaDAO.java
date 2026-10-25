@@ -45,7 +45,7 @@ public class RotaDAO {
         SQLiteDatabase db = databaseHelper.getReadableDatabase();
 
         Cursor cursor = db.rawQuery(
-                "SELECT * FROM rota ORDER BY nome",
+                "SELECT * FROM rota WHERE ativo = 1 ORDER BY nome",
                 null
         );
 
@@ -54,6 +54,8 @@ public class RotaDAO {
             Rota rota = new Rota();
 
             rota.setId(cursor.getInt(cursor.getColumnIndexOrThrow("id")));
+            rota.setRemoteId(cursor.getString(cursor.getColumnIndexOrThrow("remote_id")));
+            rota.setAtivo(cursor.getInt(cursor.getColumnIndexOrThrow("ativo")) == 1);
             rota.setNome(cursor.getString(cursor.getColumnIndexOrThrow("nome")));
             rota.setOrigem(cursor.getString(cursor.getColumnIndexOrThrow("origem")));
             rota.setDestino(cursor.getString(cursor.getColumnIndexOrThrow("destino")));
@@ -67,6 +69,15 @@ public class RotaDAO {
         db.close();
 
         return rotas;
+    }
+
+    public boolean temAlgumaRota() {
+        SQLiteDatabase db = databaseHelper.getReadableDatabase();
+        try (Cursor cursor = db.rawQuery("SELECT 1 FROM rota LIMIT 1", null)) {
+            return cursor.moveToFirst();
+        } finally {
+            db.close();
+        }
     }
 
     public Rota buscarPorId(int id) {
@@ -85,6 +96,8 @@ public class RotaDAO {
             rota = new Rota();
 
             rota.setId(cursor.getInt(cursor.getColumnIndexOrThrow("id")));
+            rota.setRemoteId(cursor.getString(cursor.getColumnIndexOrThrow("remote_id")));
+            rota.setAtivo(cursor.getInt(cursor.getColumnIndexOrThrow("ativo")) == 1);
             rota.setNome(cursor.getString(cursor.getColumnIndexOrThrow("nome")));
             rota.setOrigem(cursor.getString(cursor.getColumnIndexOrThrow("origem")));
             rota.setDestino(cursor.getString(cursor.getColumnIndexOrThrow("destino")));

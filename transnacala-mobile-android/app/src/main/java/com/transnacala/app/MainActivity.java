@@ -4,23 +4,22 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.View;
-import android.widget.FrameLayout;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.textfield.TextInputEditText;
-import com.google.android.material.textfield.TextInputLayout;
 import com.transnacala.app.database.DatabaseSeeder;
+import com.transnacala.app.network.ApiConfig;
+import com.transnacala.app.network.SyncScheduler;
 
 public class MainActivity extends AppCompatActivity {
 
     private View btnRotas;
     private View btnAdmin;
-
-    // Palavra-passe definida para acesso do administrador
-    private static final String ADMIN_PIN = "1234";
+    private View btnMotorista;
+    private View btnConfigurarApi;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,6 +31,17 @@ public class MainActivity extends AppCompatActivity {
 
         btnRotas = findViewById(R.id.btnRotas);
         btnAdmin = findViewById(R.id.btnAdmin);
+        btnMotorista = findViewById(R.id.btnMotorista);
+        btnConfigurarApi = findViewById(R.id.btnConfigurarApi);
+        btnConfigurarApi.setOnClickListener(v -> configurarApi());
+        btnMotorista.setOnClickListener(v -> {
+            if (ApiConfig.getBaseUrl(this).isEmpty()) {
+                configurarApi();
+                return;
+            }
+            startActivity(new Intent(MainActivity.this, DriverActivity.class));
+        });
+        SyncScheduler.syncNow(this);
 
         // Fluxo para passageiro/utilizador comum
         btnRotas.setOnClickListener(v -> {
@@ -40,36 +50,34 @@ public class MainActivity extends AppCompatActivity {
         });
 
         // Fluxo para acesso do administrador
-        btnAdmin.setOnClickListener(v -> solicitarAcessoAdmin());
+        btnAdmin.setOnClickListener(v -> Toast.makeText(
+                this,
+                "A administração de dados é feita pelo painel Web.",
+                Toast.LENGTH_LONG
+        ).show());
     }
 
-    private void solicitarAcessoAdmin() {
-        FrameLayout container = new FrameLayout(this);
-        int paddingPx = (int) (20 * getResources().getDisplayMetrics().density);
-        container.setPadding(paddingPx, paddingPx / 2, paddingPx, 0);
-
-        TextInputLayout inputLayout = new TextInputLayout(this, null, com.google.android.material.R.style.Widget_Material3_TextInputLayout_OutlinedBox);
-        inputLayout.setHint("Palavra-passe do Administrador");
-
-        TextInputEditText input = new TextInputEditText(inputLayout.getContext());
-        input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD);
-        inputLayout.addView(input);
-        container.addView(inputLayout);
-
+    private void configurarApi() {
+        EditText input = new EditText(this);
+        input.setSingleLine(true);
+        input.setHint("https://endereco-publico-da-api");
+        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+        input.setText(ApiConfig.getBaseUrl(this));
         new MaterialAlertDialogBuilder(this)
-                .setTitle("Acesso Restrito")
-                .setMessage("Digite a palavra-passe para aceder ao painel de administração:")
-                .setView(container)
-                .setPositiveButton("Entrar", (dialog, which) -> {
-                    String pinDigitado = input.getText() != null ? input.getText().toString().trim() : "";
-                    if (ADMIN_PIN.equals(pinDigitado)) {
-                        Intent intent = new Intent(MainActivity.this, AdminActivity.class);
-                        startActivity(intent);
-                    } else {
-                        Toast.makeText(MainActivity.this, "Palavra-passe incorreta!", Toast.LENGTH_SHORT).show();
+                .setTitle("Conexão com a API")
+                .setMessage("Informe o endereço HTTPS da API publicada pelo túnel.")
+                .setView(input)
+                .setPositiveButton("Guardar", (dialog, which) -> {
+                    try {
+                        ApiConfig.setBaseUrl(this, input.getText().toString());
+                        SyncScheduler.syncNow(this);
+                        Toast.makeText(this, "Endereço guardado.", Toast.LENGTH_SHORT).show();
+                    } catch (IllegalArgumentException exception) {
+                        Toast.makeText(this, exception.getMessage(), Toast.LENGTH_LONG).show();
                     }
                 })
-                .setNegativeButton("Cancelar", (dialog, which) -> dialog.cancel())
+                .setNegativeButton("Cancelar", null)
                 .show();
     }
+
 }

@@ -1,0 +1,317 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "TransNacala API",
+    "version": "0.1.0",
+    "description": "REST contract for TransNacala. Identity, user administration, catalogue management and incremental catalogue sync are implemented; tracking operations remain pending."
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "tags": [
+    {"name": "Health"},
+    {"name": "Authentication"},
+    {"name": "Users"},
+    {"name": "Routes"},
+    {"name": "Stops"},
+    {"name": "Vehicles"},
+    {"name": "Synchronization"},
+    {"name": "Tracking"}
+  ],
+  "paths": {
+    "/health/live": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Check process liveness",
+        "responses": {
+          "200": {
+            "description": "The API process is running.",
+            "content": {"application/json": {"schema": {"type": "object", "properties": {"status": {"type": "string", "const": "ok"}}, "required": ["status"]}}}
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Check MySQL readiness",
+        "responses": {
+          "200": {"description": "The API can reach MySQL.", "content": {"application/json": {"schema": {"type": "object", "properties": {"status": {"type": "string"}, "database": {"type": "string"}}, "required": ["status", "database"]}}}},
+          "503": {"$ref": "#/components/responses/ServiceUnavailable"}
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Authenticate a user",
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/LoginRequest"}, "example": {"username": "motorista01", "password": "example-only"}}}},
+        "responses": {
+          "200": {"description": "Access token and user profile.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/LoginResponse"}}}},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "422": {"$ref": "#/components/responses/ValidationError"}
+        }
+      }
+    },
+    "/api/v1/users": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "List user accounts (administrators only)",
+        "security": [{"BearerToken": []}],
+        "parameters": [{"$ref": "#/components/parameters/Limit"}, {"$ref": "#/components/parameters/Offset"}, {"name": "role", "in": "query", "schema": {"$ref": "#/components/schemas/UserRole"}}],
+        "responses": {
+          "200": {"description": "A page of users.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/UserPage"}}}},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "403": {"$ref": "#/components/responses/Forbidden"}
+        }
+      },
+      "post": {
+        "tags": ["Users"],
+        "summary": "Create a user account (administrators only)",
+        "security": [{"BearerToken": []}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/UserCreate"}}}},
+        "responses": {
+          "201": {"description": "Created account. Password hashes are never returned.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/User"}}}},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "403": {"$ref": "#/components/responses/Forbidden"},
+          "409": {"$ref": "#/components/responses/Conflict"},
+          "422": {"$ref": "#/components/responses/ValidationError"}
+        }
+      }
+    },
+    "/api/v1/users/{user_id}": {
+      "parameters": [{"$ref": "#/components/parameters/UserId"}],
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get a user account (administrators only)",
+        "security": [{"BearerToken": []}],
+        "responses": {"200": {"description": "User profile.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/User"}}}}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "404": {"$ref": "#/components/responses/NotFound"}}
+      },
+      "patch": {
+        "tags": ["Users"],
+        "summary": "Update a user account (administrators only)",
+        "security": [{"BearerToken": []}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/UserUpdate"}}}},
+        "responses": {"200": {"description": "Updated user profile.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/User"}}}}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "404": {"$ref": "#/components/responses/NotFound"}, "422": {"$ref": "#/components/responses/ValidationError"}}
+      }
+    },
+    "/api/v1/routes": {
+      "get": {
+        "tags": ["Routes"],
+        "summary": "List routes for passengers and offline catalogue use",
+        "parameters": [{"$ref": "#/components/parameters/Limit"}, {"$ref": "#/components/parameters/Offset"}, {"name": "include_inactive", "in": "query", "required": false, "description": "Include inactive records (administrators only).", "schema": {"type": "boolean", "default": false}}],
+        "responses": {"200": {"description": "A page of routes.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/RoutePage"}}}}, "422": {"$ref": "#/components/responses/ValidationError"}}
+      },
+      "post": {
+        "tags": ["Routes"],
+        "summary": "Create a route (administrators only)",
+        "security": [{"BearerToken": []}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/RouteWrite"}}}},
+        "responses": {"201": {"description": "Created route.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Route"}}}}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "422": {"$ref": "#/components/responses/ValidationError"}}
+      }
+    },
+    "/api/v1/routes/{route_id}": {
+      "parameters": [{"$ref": "#/components/parameters/RouteId"}],
+      "get": {
+        "tags": ["Routes"],
+        "summary": "Get a route and its ordered stops",
+        "responses": {"200": {"description": "Route details.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Route"}}}}, "404": {"$ref": "#/components/responses/NotFound"}}
+      },
+      "patch": {
+        "tags": ["Routes"],
+        "summary": "Update a route (administrators only)",
+        "security": [{"BearerToken": []}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/RouteUpdate"}}}},
+        "responses": {"200": {"description": "Updated route.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Route"}}}}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "404": {"$ref": "#/components/responses/NotFound"}, "422": {"$ref": "#/components/responses/ValidationError"}}
+      }
+    },
+    "/api/v1/routes/{route_id}/stops": {
+      "parameters": [{"$ref": "#/components/parameters/RouteId"}],
+      "put": {
+        "tags": ["Routes"],
+        "summary": "Replace the ordered stops for a route (administrators only)",
+        "security": [{"BearerToken": []}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/RouteStopInput"}}, "example": [{"stop_id": "a5bde6d2-4594-4ae6-b77d-c1796af86e31", "stop_order": 1}]}}},
+        "responses": {"200": {"description": "Route with its new ordered stops.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Route"}}}}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "404": {"$ref": "#/components/responses/NotFound"}, "422": {"$ref": "#/components/responses/ValidationError"}}
+      }
+    },
+    "/api/v1/stops": {
+      "get": {
+        "tags": ["Stops"],
+        "summary": "List stops for passengers and offline catalogue use",
+        "parameters": [{"$ref": "#/components/parameters/Limit"}, {"$ref": "#/components/parameters/Offset"}, {"name": "include_inactive", "in": "query", "required": false, "description": "Include inactive records (administrators only).", "schema": {"type": "boolean", "default": false}}],
+        "responses": {"200": {"description": "A page of stops.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/StopPage"}}}}, "422": {"$ref": "#/components/responses/ValidationError"}}
+      },
+      "post": {
+        "tags": ["Stops"],
+        "summary": "Create a stop (administrators only)",
+        "security": [{"BearerToken": []}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/StopWrite"}}}},
+        "responses": {"201": {"description": "Created stop.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Stop"}}}}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "422": {"$ref": "#/components/responses/ValidationError"}}
+      }
+    },
+    "/api/v1/stops/{stop_id}": {
+      "parameters": [{"$ref": "#/components/parameters/StopId"}],
+      "get": {
+        "tags": ["Stops"],
+        "summary": "Get a stop",
+        "responses": {"200": {"description": "Stop details.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Stop"}}}}, "404": {"$ref": "#/components/responses/NotFound"}}
+      },
+      "patch": {
+        "tags": ["Stops"],
+        "summary": "Update a stop (administrators only)",
+        "security": [{"BearerToken": []}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/StopUpdate"}}}},
+        "responses": {"200": {"description": "Updated stop.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Stop"}}}}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "404": {"$ref": "#/components/responses/NotFound"}, "422": {"$ref": "#/components/responses/ValidationError"}}
+      }
+    },
+    "/api/v1/vehicles": {
+      "get": {
+        "tags": ["Vehicles"],
+        "summary": "List vehicles",
+        "parameters": [{"$ref": "#/components/parameters/Limit"}, {"$ref": "#/components/parameters/Offset"}, {"name": "include_inactive", "in": "query", "required": false, "description": "Include inactive records (administrators only).", "schema": {"type": "boolean", "default": false}}],
+        "responses": {"200": {"description": "A page of vehicles.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/VehiclePage"}}}}, "422": {"$ref": "#/components/responses/ValidationError"}}
+      },
+      "post": {
+        "tags": ["Vehicles"],
+        "summary": "Create a vehicle (administrators only)",
+        "security": [{"BearerToken": []}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/VehicleWrite"}}}},
+        "responses": {"201": {"description": "Created vehicle.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Vehicle"}}}}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "422": {"$ref": "#/components/responses/ValidationError"}}
+      }
+    },
+    "/api/v1/vehicles/{vehicle_id}": {
+      "parameters": [{"$ref": "#/components/parameters/VehicleId"}],
+      "get": {
+        "tags": ["Vehicles"],
+        "summary": "Get a vehicle",
+        "responses": {"200": {"description": "Vehicle details.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Vehicle"}}}}, "404": {"$ref": "#/components/responses/NotFound"}}
+      },
+      "patch": {
+        "tags": ["Vehicles"],
+        "summary": "Update vehicle details (administrators only)",
+        "security": [{"BearerToken": []}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/VehicleUpdate"}}}},
+        "responses": {"200": {"description": "Updated vehicle.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Vehicle"}}}}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "404": {"$ref": "#/components/responses/NotFound"}, "422": {"$ref": "#/components/responses/ValidationError"}}
+      }
+    },
+    "/api/v1/vehicles/{vehicle_id}/assignment": {
+      "parameters": [{"$ref": "#/components/parameters/VehicleId"}],
+      "put": {
+        "tags": ["Vehicles"],
+        "summary": "Assign or unassign a driver and route (administrators only)",
+        "security": [{"BearerToken": []}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/VehicleAssignment"}}}},
+        "responses": {"200": {"description": "Updated vehicle assignment.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Vehicle"}}}}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "404": {"$ref": "#/components/responses/NotFound"}, "422": {"$ref": "#/components/responses/ValidationError"}}
+      }
+    },
+    "/api/v1/sync/changes": {
+      "get": {
+        "tags": ["Synchronization"],
+        "summary": "Read incremental catalogue changes after a cursor",
+        "parameters": [
+          {"name": "since_id", "in": "query", "required": false, "description": "Last fully applied change ID; use 0 for an initial sync.", "schema": {"type": "integer", "minimum": 0, "default": 0}},
+          {"name": "limit", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 1, "maximum": 500, "default": 100}}
+        ],
+        "responses": {"200": {"description": "Ordered changes and the cursor for the next request.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/SyncChangePage"}, "example": {"items": [], "since_id": 0, "next_since_id": 0, "has_more": false}}}}, "422": {"$ref": "#/components/responses/ValidationError"}}
+      }
+    },
+    "/api/v1/tracking/live": {
+      "get": {
+        "tags": ["Tracking"],
+        "summary": "List only active and recent vehicle locations",
+        "parameters": [{"$ref": "#/components/parameters/Limit"}, {"$ref": "#/components/parameters/Offset"}],
+        "responses": {"200": {"description": "A page of current live locations; ended or stale sessions are excluded.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/LiveLocationPage"}}}}, "422": {"$ref": "#/components/responses/ValidationError"}, "501": {"$ref": "#/components/responses/NotImplemented"}}
+      }
+    },
+    "/api/v1/tracking/sessions": {
+      "post": {
+        "tags": ["Tracking"],
+        "summary": "Start a location-sharing session (assigned driver only)",
+        "security": [{"BearerToken": []}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TrackingSessionStart"}}}},
+        "responses": {"201": {"description": "Started tracking session.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TrackingSession"}}}}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "409": {"$ref": "#/components/responses/Conflict"}, "422": {"$ref": "#/components/responses/ValidationError"}, "501": {"$ref": "#/components/responses/NotImplemented"}}
+      }
+    },
+    "/api/v1/tracking/sessions/{session_id}": {
+      "parameters": [{"$ref": "#/components/parameters/SessionId"}],
+      "delete": {
+        "tags": ["Tracking"],
+        "summary": "End a tracking session and remove its live location",
+        "security": [{"BearerToken": []}],
+        "responses": {"204": {"description": "Session ended."}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "404": {"$ref": "#/components/responses/NotFound"}, "501": {"$ref": "#/components/responses/NotImplemented"}}
+      }
+    },
+    "/api/v1/tracking/sessions/{session_id}/location": {
+      "parameters": [{"$ref": "#/components/parameters/SessionId"}],
+      "put": {
+        "tags": ["Tracking"],
+        "summary": "Publish the latest position for an active session",
+        "security": [{"BearerToken": []}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/LocationUpdate"}}}},
+        "responses": {"200": {"description": "Published location.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/LiveLocation"}}}}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "404": {"$ref": "#/components/responses/NotFound"}, "422": {"$ref": "#/components/responses/ValidationError"}, "501": {"$ref": "#/components/responses/NotImplemented"}}
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerToken": {"type": "http", "scheme": "bearer", "description": "Access token returned by the login endpoint."}
+    },
+    "parameters": {
+      "Limit": {"name": "limit", "in": "query", "required": false, "description": "Maximum items per page.", "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 50}},
+      "Offset": {"name": "offset", "in": "query", "required": false, "description": "Number of items to skip.", "schema": {"type": "integer", "minimum": 0, "default": 0}},
+      "UserId": {"name": "user_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid", "example": "92c478b7-5c45-4e6a-87db-08b1a4a10a1e"}},
+      "RouteId": {"name": "route_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid", "example": "a77e0989-99ac-4c86-b90d-b1df86199e4d"}},
+      "StopId": {"name": "stop_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid", "example": "a5bde6d2-4594-4ae6-b77d-c1796af86e31"}},
+      "VehicleId": {"name": "vehicle_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid", "example": "b2f0e262-8a92-4aa8-ae8b-2d48b39fa3da"}},
+      "SessionId": {"name": "session_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid", "example": "e25f25e9-55ac-4790-9dc3-e26f073ad882"}}
+    },
+    "responses": {
+      "ValidationError": {"description": "Invalid request fields.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorEnvelope"}}}},
+      "Unauthorized": {"description": "Authentication is required or invalid.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorEnvelope"}}}},
+      "Forbidden": {"description": "The authenticated role cannot perform this operation.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorEnvelope"}}}},
+      "NotFound": {"description": "The requested resource does not exist.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorEnvelope"}}}},
+      "Conflict": {"description": "The request conflicts with the current resource state.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorEnvelope"}}}},
+      "ServiceUnavailable": {"description": "Database is not configured or available.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorEnvelope"}}}},
+      "NotImplemented": {"description": "Domain operation is not available in the current phase.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorEnvelope"}}}}
+    },
+    "schemas": {
+      "Error": {"type": "object", "properties": {"code": {"type": "string"}, "message": {"type": "string"}, "fields": {"type": "array", "items": {"type": "object", "properties": {"field": {"type": "string"}, "message": {"type": "string"}, "code": {"type": "string"}}, "required": ["field", "message", "code"]}}}, "required": ["code", "message"]},
+      "ErrorEnvelope": {"type": "object", "properties": {"error": {"$ref": "#/components/schemas/Error"}}, "required": ["error"]},
+      "PageMetadata": {"type": "object", "properties": {"limit": {"type": "integer"}, "offset": {"type": "integer"}, "total": {"type": "integer"}}, "required": ["limit", "offset", "total"]},
+      "UserRole": {"type": "string", "enum": ["ADMIN", "DRIVER", "PASSENGER"]},
+      "SyncEntityType": {"type": "string", "enum": ["ROUTE", "STOP", "ROUTE_STOP", "VEHICLE"]},
+      "SyncOperation": {"type": "string", "enum": ["UPSERT", "DELETE"]},
+      "LoginRequest": {"type": "object", "properties": {"username": {"type": "string", "maxLength": 80}, "password": {"type": "string", "format": "password"}}, "required": ["username", "password"]},
+      "LoginResponse": {"type": "object", "properties": {"access_token": {"type": "string"}, "token_type": {"type": "string", "const": "bearer"}, "expires_in": {"type": "integer"}, "user": {"$ref": "#/components/schemas/User"}}, "required": ["access_token", "token_type", "expires_in", "user"]},
+      "UserCreate": {"type": "object", "properties": {"username": {"type": "string", "maxLength": 80}, "password": {"type": "string", "format": "password", "minLength": 12}, "full_name": {"type": "string", "maxLength": 160}, "phone": {"type": ["string", "null"], "maxLength": 32}, "role": {"$ref": "#/components/schemas/UserRole"}}, "required": ["username", "password", "full_name", "role"]},
+      "UserUpdate": {"type": "object", "properties": {"full_name": {"type": "string", "maxLength": 160}, "phone": {"type": ["string", "null"], "maxLength": 32}, "password": {"type": ["string", "null"], "format": "password", "minLength": 12}, "role": {"$ref": "#/components/schemas/UserRole"}, "is_active": {"type": "boolean"}}, "minProperties": 1},
+      "User": {"type": "object", "properties": {"id": {"type": "string", "format": "uuid", "example": "92c478b7-5c45-4e6a-87db-08b1a4a10a1e"}, "username": {"type": "string"}, "full_name": {"type": "string"}, "phone": {"type": ["string", "null"]}, "role": {"$ref": "#/components/schemas/UserRole"}, "is_active": {"type": "boolean"}, "created_at": {"type": "string", "format": "date-time"}, "updated_at": {"type": "string", "format": "date-time"}}, "required": ["id", "username", "full_name", "role", "is_active", "created_at", "updated_at"]},
+      "RouteWrite": {"type": "object", "properties": {"name": {"type": "string", "maxLength": 120}, "origin": {"type": "string", "maxLength": 160}, "destination": {"type": "string", "maxLength": 160}, "fare": {"type": "number", "minimum": 0}, "description": {"type": ["string", "null"]}}, "required": ["name", "origin", "destination", "fare"]},
+      "RouteUpdate": {"type": "object", "properties": {"name": {"type": "string", "maxLength": 120}, "origin": {"type": "string", "maxLength": 160}, "destination": {"type": "string", "maxLength": 160}, "fare": {"type": "number", "minimum": 0}, "description": {"type": ["string", "null"]}, "is_active": {"type": "boolean"}}, "minProperties": 1},
+      "RouteStopInput": {"type": "object", "properties": {"stop_id": {"type": "string", "format": "uuid"}, "stop_order": {"type": "integer", "minimum": 0}}, "required": ["stop_id", "stop_order"]},
+      "RouteStop": {"type": "object", "properties": {"stop_id": {"type": "string", "format": "uuid"}, "name": {"type": "string"}, "stop_order": {"type": "integer"}, "latitude": {"type": "number"}, "longitude": {"type": "number"}}, "required": ["stop_id", "name", "stop_order", "latitude", "longitude"]},
+      "Route": {"type": "object", "properties": {"id": {"type": "string", "format": "uuid", "example": "a77e0989-99ac-4c86-b90d-b1df86199e4d"}, "name": {"type": "string"}, "origin": {"type": "string"}, "destination": {"type": "string"}, "fare": {"type": "number"}, "description": {"type": ["string", "null"]}, "is_active": {"type": "boolean"}, "stops": {"type": "array", "items": {"$ref": "#/components/schemas/RouteStop"}}, "created_at": {"type": "string", "format": "date-time"}, "updated_at": {"type": "string", "format": "date-time"}}, "required": ["id", "name", "origin", "destination", "fare", "is_active", "stops", "created_at", "updated_at"]},
+      "StopWrite": {"type": "object", "properties": {"name": {"type": "string", "maxLength": 160}, "latitude": {"type": "number", "minimum": -90, "maximum": 90}, "longitude": {"type": "number", "minimum": -180, "maximum": 180}}, "required": ["name", "latitude", "longitude"]},
+      "StopUpdate": {"type": "object", "properties": {"name": {"type": "string", "maxLength": 160}, "latitude": {"type": "number", "minimum": -90, "maximum": 90}, "longitude": {"type": "number", "minimum": -180, "maximum": 180}, "is_active": {"type": "boolean"}}, "minProperties": 1},
+      "Stop": {"type": "object", "properties": {"id": {"type": "string", "format": "uuid", "example": "a5bde6d2-4594-4ae6-b77d-c1796af86e31"}, "name": {"type": "string"}, "latitude": {"type": "number"}, "longitude": {"type": "number"}, "is_active": {"type": "boolean"}, "created_at": {"type": "string", "format": "date-time"}, "updated_at": {"type": "string", "format": "date-time"}}, "required": ["id", "name", "latitude", "longitude", "is_active", "created_at", "updated_at"]},
+      "VehicleWrite": {"type": "object", "properties": {}, "additionalProperties": false, "description": "Empty object; the API allocates the next unique vehicle code."},
+      "VehicleUpdate": {"type": "object", "properties": {"is_active": {"type": "boolean"}}, "minProperties": 1},
+      "VehicleAssignment": {"type": "object", "properties": {"driver_user_id": {"type": ["string", "null"], "format": "uuid"}, "route_id": {"type": ["string", "null"], "format": "uuid"}}, "required": ["driver_user_id", "route_id"]},
+      "Vehicle": {"type": "object", "properties": {"id": {"type": "string", "format": "uuid", "example": "b2f0e262-8a92-4aa8-ae8b-2d48b39fa3da"}, "code": {"type": "string"}, "driver_user_id": {"type": ["string", "null"], "format": "uuid"}, "route_id": {"type": ["string", "null"], "format": "uuid"}, "is_active": {"type": "boolean"}, "created_at": {"type": "string", "format": "date-time"}, "updated_at": {"type": "string", "format": "date-time"}}, "required": ["id", "code", "is_active", "created_at", "updated_at"]},
+      "RoutePage": {"type": "object", "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/Route"}}, "page": {"$ref": "#/components/schemas/PageMetadata"}}, "required": ["items", "page"]},
+      "StopPage": {"type": "object", "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/Stop"}}, "page": {"$ref": "#/components/schemas/PageMetadata"}}, "required": ["items", "page"]},
+      "UserPage": {"type": "object", "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/User"}}, "page": {"$ref": "#/components/schemas/PageMetadata"}}, "required": ["items", "page"]},
+      "VehiclePage": {"type": "object", "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/Vehicle"}}, "page": {"$ref": "#/components/schemas/PageMetadata"}}, "required": ["items", "page"]},
+      "SyncChange": {"type": "object", "properties": {"id": {"type": "integer", "minimum": 1}, "entity_type": {"$ref": "#/components/schemas/SyncEntityType"}, "entity_id": {"type": "string", "format": "uuid"}, "related_entity_id": {"type": ["string", "null"], "format": "uuid", "description": "For ROUTE_STOP changes, this is stop_id and entity_id is route_id."}, "operation": {"$ref": "#/components/schemas/SyncOperation"}, "changed_at": {"type": "string", "format": "date-time"}}, "required": ["id", "entity_type", "entity_id", "operation", "changed_at"]},
+      "SyncChangePage": {"type": "object", "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/SyncChange"}}, "since_id": {"type": "integer"}, "next_since_id": {"type": "integer"}, "has_more": {"type": "boolean"}}, "required": ["items", "since_id", "next_since_id", "has_more"]},
+      "TrackingSessionStart": {"type": "object", "properties": {"vehicle_id": {"type": "string", "format": "uuid"}}, "required": ["vehicle_id"]},
+      "TrackingSession": {"type": "object", "properties": {"id": {"type": "string", "format": "uuid"}, "vehicle_id": {"type": "string", "format": "uuid"}, "started_at": {"type": "string", "format": "date-time"}, "ended_at": {"type": ["string", "null"], "format": "date-time"}}, "required": ["id", "vehicle_id", "started_at"]},
+      "LocationUpdate": {"type": "object", "properties": {"latitude": {"type": "number", "minimum": -90, "maximum": 90}, "longitude": {"type": "number", "minimum": -180, "maximum": 180}, "accuracy_meters": {"type": ["number", "null"], "minimum": 0}, "heading_degrees": {"type": ["number", "null"], "minimum": 0, "maximum": 360}, "speed_meters_per_second": {"type": ["number", "null"], "minimum": 0}}, "required": ["latitude", "longitude"]},
+      "LiveLocation": {"allOf": [{"$ref": "#/components/schemas/LocationUpdate"}, {"type": "object", "properties": {"vehicle_id": {"type": "string", "format": "uuid"}, "session_id": {"type": "string", "format": "uuid"}, "updated_at": {"type": "string", "format": "date-time"}}, "required": ["vehicle_id", "session_id", "updated_at"]}]},
+      "LiveLocationPage": {"type": "object", "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/LiveLocation"}}, "page": {"$ref": "#/components/schemas/PageMetadata"}}, "required": ["items", "page"]}
+    }
+  }
+}

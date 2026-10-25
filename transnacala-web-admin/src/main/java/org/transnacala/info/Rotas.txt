@@ -1,0 +1,74 @@
+
+Baixa:-14.544387, 40.672718
+
+Belmonte:-14.558279, 40.686383
+
+Alta: -14.555018, 40.692938
+
+Fernão Veloso:-14.458744, 40.676286
+
+Sonho Real:-14.551268, 40.697374
+
+Juma:-14.571963, 40.683896
+
+Nacala-a-Velha:-14.547094, 40.625267
+
+Cruzamento Fernao veloso: -14.564426, 40.687693
+
+Moti: -14.554112, 40.685480
+
+VIP: -14.548473, 40.684681
+
+Escadas: -14.546111, 40.684148
+
+Maiaia: -14.543721, 40.678898
+
+Rasta: -14.543900, 40.676703
+
+Entrada da escola: -14.561998, 40.687143
+
+Praça: -14.556926, 40.690440
+
+Mocone: -14.541633, 40.698412
+
+Aeroporto: -14.493794, 40.695344
+
+Naherenque: -14.471189, 40.691133
+
+----
+
+Terminais: 
+Fernão veloso-Alta, com divergencia em "sonho real", alguns desviao e entrao na terminal da Alta e outros dao continuidade ate Juma os que cujo terminal é juma.
+Baixa-Alta, os dois chapas que saem da baixa divergem no Belmonte, um desvia para terminal da alta e outro da continuidade até matibane.
+
+---
+Entrada do Aeroporto: -14.494160, 40.695466
+
+Entrada da base: -14.490316, 40.695419
+
+ASAMOC: -14.503563, 40.697286
+
+ADPP: -14.505643, 40.697676
+
+Paira: -14.521328, 40.695427
+
+Escola Secundária da Cidade Alta (fica de frente para estrada): -14.555824, 40.691642
+
+Matibane: -14.858443, 40.760088
+
+-------
+
+Fernão Veloso → Juma:
+Fernão Veloso, Naherenque, Entrada da base, Entrada do Aeroporto, ASAMOC, ADPP, Paira, Mocone, Sonho Real, Cruzamento Fernao veloso, Juma
+
+Fernão Veloso → Alta:
+Fernão Veloso, Naherenque, Entrada da base, Entrada do Aeroporto, ASAMOC, ADPP, Paira, Mocone, Sonho Real, Alta
+
+Baixa → Alta:
+Baixa, Rasta, Maiaia, Escadas, VIP, Moti, Belmonte, Praça, Escola Secundária da Cidade Alta, Alta
+
+Baixa → Matibane:
+Baixa, Rasta, Maiaia, Escadas, VIP, Moti, Belmonte, Entrada da escola Santa Maria: -14.561998, 40.687143, Cruzamento Fernao veloso,  Juma, Matibane
+
+Juma → Nacala-a-Velha:
+Juma, (Não conheço as paragens), Nacala-a-Velha

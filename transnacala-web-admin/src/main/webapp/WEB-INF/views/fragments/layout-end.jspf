@@ -1,0 +1,5 @@
+    <footer class="page-footer">TransNacala Admin <span>·</span> Mobilidade mais simples para Nacala.</footer>
+  </main>
+  <script src="${pageContext.request.contextPath}/assets/admin.js" defer></script>
+</body>
+</html>

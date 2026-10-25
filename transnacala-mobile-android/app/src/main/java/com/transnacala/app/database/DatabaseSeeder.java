@@ -22,7 +22,7 @@ public class DatabaseSeeder {
          * Se já existirem rotas no banco, encerra sem alterar nada.
          */
 
-        if (rotaDAO.listarTodas().size() > 0) {
+        if (rotaDAO.temAlgumaRota()) {
             return;
         }
 

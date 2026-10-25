@@ -1,0 +1,42 @@
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><c:out value="${pageTitle}"/> · TransNacala</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/admin.css">
+</head>
+<body class="admin-page">
+  <aside class="sidebar">
+    <a class="brand brand-light" href="${pageContext.request.contextPath}/admin"><span class="brand-mark">TN</span><span>trans<span>nacala</span></span></a>
+    <div class="sidebar-label">GESTÃO</div>
+    <nav class="side-nav" aria-label="Navegação administrativa">
+      <a class="nav-link ${pageKey == 'dashboard' ? 'active' : ''}" href="${pageContext.request.contextPath}/admin"><span class="nav-icon">⌂</span> Visão geral</a>
+      <a class="nav-link ${pageKey == 'routes' ? 'active' : ''}" href="${pageContext.request.contextPath}/admin/routes"><span class="nav-icon">↗</span> Rotas</a>
+      <a class="nav-link ${pageKey == 'team' ? 'active' : ''}" href="${pageContext.request.contextPath}/admin/team"><span class="nav-icon">◎</span> Utilizadores e frota</a>
+      <a class="nav-link ${pageKey == 'stops' ? 'active' : ''}" href="${pageContext.request.contextPath}/admin/stops"><span class="nav-icon">⌖</span> Paragens</a>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="help-card"><span class="help-spark">✳</span><strong>Gestão de operações</strong><span>Organize rotas, pontos de embarque e equipa num só lugar.</span></div>
+      <div class="account-row"><span class="avatar"><c:out value="${fn:substring(username, 0, 1)}"/></span><span class="account-name"><strong><c:out value="${username}"/></strong><small>Administrador</small></span>
+        <form action="${pageContext.request.contextPath}/logout" method="post">
+          <input type="hidden" name="csrf" value="<c:out value='${csrf}'/>">
+          <button class="icon-button logout-button" type="submit" title="Terminar sessão" aria-label="Terminar sessão">↗</button>
+        </form>
+      </div>
+    </div>
+  </aside>
+  <main class="main-content">
+    <header class="topbar">
+      <div><span class="breadcrumb">TransNacala <span>/</span> Administração <span>/</span> <c:out value="${pageTitle}"/></span><h1><c:out value="${pageTitle}"/></h1></div>
+      <div class="topbar-right"><span class="status-chip"><i></i> Sistema operacional</span><span class="date-chip">Nacala · Moçambique</span></div>
+    </header>
+    <c:if test="${not empty success}"><div class="notice notice-success"><c:out value="${success}"/></div></c:if>
+    <c:if test="${not empty error}"><div class="notice notice-error"><c:out value="${error}"/></div></c:if>
+    <c:if test="${not empty loadError}"><div class="notice notice-warning"><c:out value="${loadError}"/></div></c:if>

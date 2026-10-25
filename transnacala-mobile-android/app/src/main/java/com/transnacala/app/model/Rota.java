@@ -5,6 +5,8 @@ import java.io.Serializable;
 public class Rota implements Serializable {
 
     private int id;
+    private String remoteId;
+    private boolean ativo = true;
     private String nome;
     private String origem;
     private String destino;
@@ -35,6 +37,22 @@ public class Rota implements Serializable {
 
     public int getId() {
         return id;
+    }
+
+    public String getRemoteId() {
+        return remoteId;
+    }
+
+    public void setRemoteId(String remoteId) {
+        this.remoteId = remoteId;
+    }
+
+    public boolean isAtivo() {
+        return ativo;
+    }
+
+    public void setAtivo(boolean ativo) {
+        this.ativo = ativo;
     }
 
     public void setId(int id) {
