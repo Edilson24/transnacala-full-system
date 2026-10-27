@@ -39,13 +39,17 @@ def test_openapi_contract_covers_all_client_domains() -> None:
     assert contract["components"]["schemas"]["VehicleWrite"]["properties"] == {}
 
 
-def test_future_tracking_endpoint_returns_explicit_error() -> None:
-    client = TestClient(create_app(Settings(database_url=None)))
+def test_tracking_endpoint_returns_empty_page_when_nobody_is_live() -> None:
+    app = create_app(Settings(database_url="sqlite://"))
+    from app.db.base import Base
 
+    Base.metadata.create_all(app.state.engine)
+    client = TestClient(app)
     response = client.get("/api/v1/tracking/live")
 
-    assert response.status_code == 501
-    assert response.json()["error"]["code"] == "DOMAIN_ENDPOINT_NOT_IMPLEMENTED"
+    assert response.status_code == 200
+    assert response.json()["items"] == []
+    assert response.json()["page"]["total"] == 0
 
 
 def test_openapi_is_served_and_contract_schemas_validate_input() -> None:

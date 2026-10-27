@@ -1,12 +1,13 @@
-# TransNacala API
+# API TransNacala
 
-FastAPI service for the TransNacala system. Mobile and web clients communicate
-with this API over HTTPS/JSON; they must never connect to MySQL directly.
+Serviço FastAPI do sistema TransNacala. As aplicações móveis e web comunicam
+com esta API através de HTTPS/JSON; nunca se devem ligar diretamente ao MySQL.
 
-## Local setup
+## Preparação local
 
-Requires Python 3.11+ and MySQL 8.0.16+. For the API migration path, create
-only an empty database in MySQL Workbench:
+Requer Python 3.11 ou superior e MySQL 8.0.16 ou superior. Para usar o
+processo de migração da API, crie no MySQL Workbench apenas uma base de dados
+vazia:
 
 ```sql
 CREATE DATABASE transnacala
@@ -14,12 +15,12 @@ CREATE DATABASE transnacala
     COLLATE utf8mb4_unicode_ci;
 ```
 
-Do not run `database/mysql_schema.sql` on this database before Alembic: that
-script creates the tables itself, and the initial migration would then try to
-create them a second time. The SQL script is the standalone Workbench bootstrap;
-Alembic is the API-managed schema path.
+Não execute `database/mysql_schema.sql` nesta base de dados antes de usar o
+Alembic: esse script cria as tabelas e a migração inicial tentaria criá-las
+novamente. O script SQL é uma alternativa autónoma para preparar o esquema no
+Workbench; o Alembic é o processo de gestão do esquema pela API.
 
-Then set up the API:
+Prepare a API:
 
 ```powershell
 py -3 -m venv .venv
@@ -28,77 +29,74 @@ python -m pip install -e ".[test]"
 Copy-Item .env.example .env
 ```
 
-The local connection defaults map to `127.0.0.1:3306`, database
-`transnacala` (the name created by `mysql_schema.sql`), and the PyMySQL driver.
-Set `MYSQL_USER` and `MYSQL_PASSWORD` in `.env` to the credentials you use for
-MySQL Workbench. Keep credentials local and do not commit `.env`. If a password
-contains URL-special characters, the separate `MYSQL_*` settings handle it
-without URL encoding. Alternatively, configure a complete `DATABASE_URL`,
-which takes precedence. The API can start without credentials to serve
-liveness and documentation; readiness returns `503` until MySQL is configured
-and reachable.
+As predefinições de ligação local apontam para `127.0.0.1:3306`, base de dados
+`transnacala` e controlador PyMySQL. No ficheiro `.env`, defina `MYSQL_USER` e
+`MYSQL_PASSWORD` com as credenciais usadas no MySQL Workbench. Mantenha essas
+credenciais locais e não inclua o `.env` no Git. As variáveis `MYSQL_*`
+suportam palavras-passe com caracteres especiais sem ser necessário codificá-las
+como URL. Em alternativa, configure `DATABASE_URL`, que tem precedência.
+A API pode iniciar sem credenciais para disponibilizar a verificação de
+disponibilidade e a documentação; o estado de prontidão devolve `503` até o
+MySQL estar configurado e acessível.
 
-Fill in `MYSQL_USER` and `MYSQL_PASSWORD` in `.env`, then apply versioned
-migrations and start the API:
+Preencha `MYSQL_USER` e `MYSQL_PASSWORD` no `.env`, aplique as migrações e
+inicie a API:
 
 ```powershell
 python -m alembic upgrade head
 python -m uvicorn main:app --reload --port 8000
 ```
 
-On a newly migrated database, create the first administrator from an interactive
-terminal. The password is entered without echo and must contain at least 12
-characters:
+Numa base de dados recém-migrada, crie o primeiro administrador a partir de
+um terminal interativo. A palavra-passe não aparece no ecrã e deve ter pelo
+menos 12 caracteres:
 
 ```powershell
 python -m app.cli create-admin admin
 ```
 
-For development/testing only, create the requested sample accounts using
-interactive prompts (passwords are hidden while typing). The command is
-restricted to `APP_ENV=development`, skips existing usernames without changing
-their passwords, and enforces the API's minimum length of 12 characters:
+Antes de iniciar a API, defina `AUTH_SECRET_KEY` com um valor aleatório e
+privado de, pelo menos, 32 bytes. Gere-o localmente com
+`python -c "import secrets; print(secrets.token_urlsafe(48))"` e guarde-o
+apenas no `.env` ou no serviço de segredos do ambiente de publicação. Se não
+for definido em desenvolvimento, a API usa uma chave temporária do processo,
+e os tokens existentes deixam de funcionar após um reinício. Por predefinição,
+os tokens expiram após uma hora (`ACCESS_TOKEN_EXPIRE_SECONDS`). As
+palavras-passe são guardadas como hashes PBKDF2-HMAC-SHA256 com salt e nunca
+são incluídas nas respostas da API.
 
-```powershell
-python -m app.cli seed-test-users
-```
+A documentação interativa está em `/docs`; o contrato legível por máquina
+está em `/openapi.json`. A disponibilidade do processo e a prontidão da base
+de dados podem ser consultadas em `/health/live` e `/health/ready`. As
+alterações de esquema devem ser adicionadas como revisões Alembic; não altere
+manualmente uma base de dados publicada.
 
-It creates `edilson` (Edilson Vitorino Hilario, ADMIN), `anifa` (Anifa Armando,
-PASSENGER), and `silva` (Silva Atumane, DRIVER). Set distinct passwords when
-prompted; test passwords such as `edilson123456`, `anifa1234567`, and
-`silva1234567` meet the current length rule, but must not be reused outside a
-local test database.
+Execute os testes automatizados com `pytest`. Os testes usam SQLite em memória
+e não requerem MySQL. O script SQL de preparação e a migração Alembic inicial
+mantêm o mesmo modelo relacional.
 
-Set `AUTH_SECRET_KEY` to a private random value of at least 32 bytes before
-starting the API. Generate one locally with
-`python -c "import secrets; print(secrets.token_urlsafe(48))"` and keep it only
-in `.env` or your deployment secret store. If omitted in development, the API
-uses an ephemeral process key and existing access tokens stop working after a
-restart. Access tokens expire after `ACCESS_TOKEN_EXPIRE_SECONDS` (one hour by
-default). Passwords use salted PBKDF2-HMAC-SHA256 hashes and are never included
-in API responses.
+## Estado do contrato da API
 
-Interactive OpenAPI documentation is at `/docs`; the machine-readable contract
-is at `/openapi.json`. Process liveness and database readiness are at
-`/health/live` and `/health/ready`. Schema changes must be added as Alembic
-revisions; do not edit a deployed database manually.
+`app/openapi.json` define o contrato HTTP revisto para autenticação, contas,
+catálogo, atribuições, sincronização e localização. Os identificadores das
+entidades são UUID em formato de texto. Os endpoints de listagem usam
+`limit`/`offset`; a sincronização incremental usa
+`since_id`/`next_since_id`. Os erros seguem o formato
+`{"error":{"code":"...","message":"...","fields":[]}}`. As respostas de erro
+nunca incluem palavras-passe, tokens ou detalhes da base de dados.
 
-Run the automated tests with `pytest`. Tests use SQLite in-memory and do not
-require MySQL. The bootstrap SQL and Alembic migration are both maintained
-against the same initial relational model.
+A autenticação, a gestão de contas, rotas, paragens, veículos e atribuições,
+bem como a leitura incremental de alterações do catálogo, estão implementadas.
+Os códigos dos veículos são atribuídos com um bloqueio transacional sobre a
+sequência de sincronização partilhada. As alterações do catálogo e os
+respetivos eventos de sincronização são confirmados na mesma transação.
 
-## API contract status
-
-`app/openapi.json` defines the reviewed HTTP contract for authentication,
-accounts, catalogue, assignments, sync and tracking. Entity IDs are UUID
-strings. List endpoints use `limit`/`offset`; incremental sync uses
-`since_id`/`next_since_id`. Errors have the shape
-`{"error":{"code":"...","message":"...","fields":[]}}`. Passwords, tokens and
-database details are never returned in error bodies.
-
-Authentication, account administration, route/stop/vehicle management,
-assignments and incremental catalogue change reads are implemented. Vehicle
-codes are allocated under a transaction lock on the shared sync sequence.
-Catalogue writes and their sync events commit atomically. Tracking endpoints
-remain reserved for a later phase and return the explicit
-`501 DOMAIN_ENDPOINT_NOT_IMPLEMENTED` error until implemented.
+Os motoristas podem iniciar e terminar sessões autenticadas de partilha da
+localização e publicar posições validadas do veículo ativo que lhes foi
+atribuído. O endpoint paginado de localizações permite consultar os veículos
+que partilham a posição recentemente. Ao terminar uma sessão, a posição
+publicada é removida; as sessões sem atualizações expiram. Coordenadas GPS e
+valores dos sensores são arredondados à precisão das colunas antes da
+validação, evitando rejeitar leituras com casas decimais extra. Os testes de
+localização usam SQLite em memória. Antes de usar em produção, confirme no
+MySQL configurado o comportamento dos bloqueios de linhas e das datas.

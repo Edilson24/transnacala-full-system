@@ -20,9 +20,6 @@ public final class SyncScheduler {
     }
 
     public static void schedulePeriodic(Context context) {
-        if (ApiConfig.getBaseUrl(context).isEmpty()) {
-            return;
-        }
         Constraints constraints = new Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build();
@@ -35,9 +32,6 @@ public final class SyncScheduler {
     }
 
     public static void syncNow(Context context) {
-        if (ApiConfig.getBaseUrl(context).isEmpty()) {
-            return;
-        }
         Constraints constraints = new Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build();

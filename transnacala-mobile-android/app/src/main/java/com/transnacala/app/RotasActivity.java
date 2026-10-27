@@ -41,6 +41,9 @@ public class RotasActivity extends AppCompatActivity {
         rotas.addAll(new RotaDAO(this).listarTodas());
         syncStatus = findViewById(R.id.txtSyncStatus);
         findViewById(R.id.btnSyncRotas).setOnClickListener(v -> sincronizar());
+        findViewById(R.id.btnLiveMap).setOnClickListener(v ->
+                startActivity(new Intent(RotasActivity.this, LiveMapActivity.class))
+        );
 
         adapter = new RotaAdapter(
                 rotas,
@@ -70,10 +73,6 @@ public class RotasActivity extends AppCompatActivity {
     }
 
     private void sincronizar() {
-        if (ApiConfig.getBaseUrl(this).isEmpty()) {
-            syncStatus.setText("Modo offline. Configure a API no ecrã inicial para sincronizar.");
-            return;
-        }
         syncStatus.setText("A sincronizar catálogo...");
         SyncScheduler.syncNow(this);
     }

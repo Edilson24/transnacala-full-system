@@ -42,7 +42,11 @@ def test_liveness_does_not_require_database() -> None:
 
 
 def test_readiness_reports_missing_database_configuration() -> None:
-    client = TestClient(create_app(Settings(database_url=None)))
+    client = TestClient(
+        create_app(
+            Settings(database_url=None, mysql_user="", mysql_password="")
+        )
+    )
 
     response = client.get("/health/ready")
 

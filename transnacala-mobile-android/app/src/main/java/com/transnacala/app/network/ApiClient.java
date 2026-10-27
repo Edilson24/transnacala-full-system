@@ -31,6 +31,10 @@ public final class ApiClient {
         return request("POST", path, body);
     }
 
+    public JSONObject put(String path, JSONObject body) throws IOException {
+        return request("PUT", path, body);
+    }
+
     public JSONObject delete(String path) throws IOException {
         return request("DELETE", path, null);
     }
@@ -44,6 +48,7 @@ public final class ApiClient {
             connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
             connection.setReadTimeout(READ_TIMEOUT_MS);
             connection.setRequestProperty("Accept", "application/json");
+            connection.setRequestProperty("bypass-tunnel-reminder", "true");
             if (accessToken != null && !accessToken.isEmpty()) {
                 connection.setRequestProperty("Authorization", "Bearer " + accessToken);
             }
@@ -111,7 +116,10 @@ public final class ApiClient {
         }
 
         private static ApiException fromResponse(int status, String response) {
-            String message = "Falha de comunicação com a API (HTTP " + status + ").";
+            String message = status == 511
+                    ? "A rede ou o túnel exige autenticação (HTTP 511). "
+                    + "Confirme que o LocalTunnel está ativo ou teste outra rede."
+                    : "Falha de comunicação com a API (HTTP " + status + ").";
             String code = "";
             try {
                 JSONObject error = new JSONObject(response).optJSONObject("error");

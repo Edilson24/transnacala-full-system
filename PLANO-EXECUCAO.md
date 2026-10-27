@@ -164,30 +164,47 @@ anunciar/limitar os ficheiros que vai modificar.
   cursor na mesma transação SQLite, preserva IDs locais, aplica tombstones e
   retenta falhas temporárias. Configuração exige HTTPS; a lista de rotas permite
   sincronizar manualmente ou continuar offline. Compilação Android concluída.
-- [ ] **P3.3 — Implementar experiências por papel.** Fluxo de passageiro para
-  consultar rotas/paragens e fluxo de motorista autenticado para iniciar/parar
-  partilha de forma clara. Passageiro consulta o cache e solicita atualização;
-  motorista autentica pela API, confirma o papel e veículo atribuído. A ação de
-  partilha está apresentada, mas o servidor ainda responde 501; não sinalizar
-  início/paragem até concluir P4.1. O comando de teste para criar as contas
-  Edilson/Anifa/Silva está em `transnacala-api-rest/app/cli.py` e exige
-  `APP_ENV=development`.
+- [x] **P3.3 — Implementar experiências por papel.** Passageiros consultam
+  rotas/paragens em cache e podem solicitar atualização; motoristas autenticam
+  pela API, têm o perfil e veículo ativo identificados e controlam explicitamente
+  o início/fim da partilha. A entrada administrativa foi removida do Android.
+  Contas são geridas pelo painel/API; não há comando especial para semear contas
+  de teste.
 
 ### Fase 4 — localização ao vivo e integração
 
-- [ ] **P4.1 — Publicar sessões de localização.** Criar/encerrar sessão e
+- [x] **P4.1 — Publicar sessões de localização.** Criar/encerrar sessão e
   atualizar posição autenticada do veículo; validar latitude/longitude,
   propriedade do veículo, frequência e atualização mais recente. Serializar
-  início de sessão por veículo para impedir sessões concorrentes ativas.
-- [ ] **P4.2 — Mostrar veículos ao vivo.** Expor somente sessões ativas e
-  recentes; mapa distingue posição disponível de sessão parada/expirada.
-- [ ] **P4.3 — Tratar localização e permissões Android.** Solicitar permissões
+  início de sessão por veículo para impedir sessões concorrentes ativas. TTLs
+  encerram sessões sem atualização e testes de API cobrem autorização, ciclo de
+  vida, localização recente e remoção ao terminar.
+- [x] **P4.2 — Mostrar veículos ao vivo.** API paginada expõe somente posições
+  recentes de sessões ativas; mapa Android desenha as rotas pelas coordenadas
+  das paragens, associa cores aos veículos e atualiza posições a cada 15
+  segundos. Baixa–Alta usa laranja. O mapa apresenta estado vazio quando não
+  há veículos ativos.
+- [x] **P4.3 — Tratar localização e permissões Android.** Solicitar permissões
   adequadas, cumprir restrições de localização em segundo plano, oferecer
-  indicação visível durante partilha e parar a coleta ao encerrar.
+  indicação visível durante partilha através de serviço foreground/notificação
+  e parar a coleta ao encerrar. Build Android concluído; validação em dispositivo
+  fica para P4.4.
 - [ ] **P4.4 — Validar ponta a ponta.** Testar MySQL/API, web, Android offline e
-  online, papéis, falhas de rede, duplicação de pedidos e fim de sessão.
+  online, papéis, falhas de rede, duplicação de pedidos e fim de sessão. Ainda
+  falta validar o percurso real no MySQL e em dispositivo/emulador.
 - [ ] **P4.5 — Documentar execução local.** Instruções reproduzíveis para
   Workbench, API, Android, web e túnel; túnel não é configuração de produção.
+
+### Fase 5 — Distribuição pública Android
+
+- [x] **P5.1 — Preparar página pública de download.** A raiz pública do painel
+  web apresenta uma página de distribuição e oferece a última versão quando
+  `downloads/transnacala-mobile.apk` está presente no WAR. Sem o APK, mostra
+  disponibilidade futura; o README explica como publicar o APK assinado. A
+  compilação Maven empacotou a página pública e o seu CSS no WAR.
+- [ ] **P5.2 — Publicar atualização Android.** Gerar uma versão de release
+  assinada e copiá-la para o caminho público fixo; validar o download HTTPS e a
+  atualização sobre uma instalação anterior com a mesma chave de assinatura.
 
 ## Critérios globais de conclusão
 

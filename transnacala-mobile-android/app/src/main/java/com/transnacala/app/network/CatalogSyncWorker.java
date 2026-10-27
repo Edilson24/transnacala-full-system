@@ -181,7 +181,8 @@ public class CatalogSyncWorker extends Worker {
     private static void upsertRoute(SQLiteDatabase db, JSONObject route) throws JSONException {
         ContentValues values = new ContentValues();
         values.put("remote_id", route.getString("id"));
-        values.put("nome", route.getString("name"));
+        String routeName = normalizeRouteName(route.getString("name"));
+        values.put("nome", routeName);
         values.put("origem", route.getString("origin"));
         values.put("destino", route.getString("destination"));
         values.put("tarifa", route.getDouble("fare"));
@@ -194,8 +195,9 @@ public class CatalogSyncWorker extends Worker {
         String remoteId = route.getString("id");
         if (!updateExistingOrAdoptLegacy(
                 db, "rota", remoteId, values,
-                "nome = ? AND origem = ? AND destino = ?",
-                new String[]{route.getString("name"), route.getString("origin"),
+                "REPLACE(REPLACE(REPLACE(nome, ' → ', ' – '), ' - ', ' – '), ' — ', ' – ') = ? " +
+                        "AND origem = ? AND destino = ?",
+                new String[]{routeName, route.getString("origin"),
                         route.getString("destination")}
         )) {
             db.insertOrThrow("rota", null, values);
@@ -306,6 +308,12 @@ public class CatalogSyncWorker extends Worker {
         )) {
             return cursor.moveToFirst() ? cursor.getInt(0) : -1;
         }
+    }
+
+    private static String normalizeRouteName(String name) {
+        return name.replace(" → ", " – ")
+                .replace(" - ", " – ")
+                .replace(" — ", " – ");
     }
 
     private static void setActive(

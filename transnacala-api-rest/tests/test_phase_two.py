@@ -2,11 +2,12 @@ from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 
 from app.core.config import Settings
 from app.db.base import Base
 from app.main import create_app
-from app.models.entities import User, UserRole
+from app.models.entities import LiveLocation, TrackingSession, User, UserRole
 from app.services.security import hash_password
 
 
@@ -218,3 +219,111 @@ def test_token_signature_is_checked(client: TestClient) -> None:
         headers={"Authorization": "Bearer not.a.valid.token"},
     )
     assert response.status_code == 401
+
+
+def test_tracking_session_lifecycle_and_live_locations(client: TestClient) -> None:
+    admin_headers = {"Authorization": f"Bearer {login(client)}"}
+    driver_response = client.post(
+        "/api/v1/users",
+        headers=admin_headers,
+        json={
+            "username": "driver",
+            "password": "driver password",
+            "full_name": "Test Driver",
+            "role": "DRIVER",
+        },
+    )
+    assert driver_response.status_code == 201, driver_response.text
+    driver = driver_response.json()
+    vehicle_response = client.post("/api/v1/vehicles", headers=admin_headers, json={})
+    assert vehicle_response.status_code == 201, vehicle_response.text
+    vehicle = vehicle_response.json()
+    assignment = client.put(
+        f"/api/v1/vehicles/{vehicle['id']}/assignment",
+        headers=admin_headers,
+        json={"driver_user_id": driver["id"], "route_id": None},
+    )
+    assert assignment.status_code == 200
+    driver_headers = {
+        "Authorization": f"Bearer {login(client, 'driver', 'driver password')}"
+    }
+    passenger_response = client.post(
+        "/api/v1/users",
+        headers=admin_headers,
+        json={
+            "username": "passenger",
+            "password": "passenger password",
+            "full_name": "Test Passenger",
+            "role": "PASSENGER",
+        },
+    )
+    assert passenger_response.status_code == 201, passenger_response.text
+    passenger_token = login(client, "passenger", "passenger password")
+    forbidden = client.post(
+        "/api/v1/tracking/sessions",
+        headers={"Authorization": f"Bearer {passenger_token}"},
+        json={"vehicle_id": vehicle["id"]},
+    )
+    assert forbidden.status_code == 403
+    assert client.post(
+        "/api/v1/tracking/sessions",
+        headers=driver_headers,
+        json={"vehicle_id": str(uuid4())},
+    ).status_code == 403
+
+    started = client.post(
+        "/api/v1/tracking/sessions",
+        headers=driver_headers,
+        json={"vehicle_id": vehicle["id"]},
+    )
+    assert started.status_code == 201
+    session_id = started.json()["id"]
+    assert client.post(
+        "/api/v1/tracking/sessions",
+        headers=driver_headers,
+        json={"vehicle_id": vehicle["id"]},
+    ).status_code == 409
+
+    location = client.put(
+        f"/api/v1/tracking/sessions/{session_id}/location",
+        headers=driver_headers,
+        json={
+            "latitude": "-14.542123456789",
+            "longitude": "40.672123456789",
+            "accuracy_meters": "8.56789",
+            "heading_degrees": "90.12345",
+            "speed_meters_per_second": "4.23456",
+        },
+    )
+    assert location.status_code == 200
+    assert location.json()["vehicle_code"] == vehicle["code"]
+    assert location.json()["latitude"] == "-14.5421235"
+    assert location.json()["longitude"] == "40.6721235"
+    assert location.json()["accuracy_meters"] == "8.57"
+    assert location.json()["heading_degrees"] == "90.12"
+    assert location.json()["speed_meters_per_second"] == "4.23"
+    invalid_location = client.put(
+        f"/api/v1/tracking/sessions/{session_id}/location",
+        headers=driver_headers,
+        json={"latitude": "91.123456789", "longitude": "40.672123456789"},
+    )
+    assert invalid_location.status_code == 422
+    live = client.get("/api/v1/tracking/live")
+    assert live.status_code == 200
+    assert live.json()["page"]["total"] == 1
+    assert live.json()["items"][0]["vehicle_id"] == vehicle["id"]
+
+    ended = client.delete(
+        f"/api/v1/tracking/sessions/{session_id}", headers=driver_headers
+    )
+    assert ended.status_code == 204
+    assert client.get("/api/v1/tracking/live").json()["items"] == []
+    assert client.put(
+        f"/api/v1/tracking/sessions/{session_id}/location",
+        headers=driver_headers,
+        json={"latitude": -14.542, "longitude": 40.672},
+    ).status_code == 409
+    with client.app.state.session_factory() as session:
+        assert session.scalar(select(LiveLocation)) is None
+        tracking_session = session.get(TrackingSession, session_id)
+        assert tracking_session.ended_at is not None

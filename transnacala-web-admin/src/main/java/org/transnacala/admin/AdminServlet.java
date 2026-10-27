@@ -51,6 +51,10 @@ public class AdminServlet extends HttpServlet {
         request.setAttribute("csrf", session.getAttribute("csrf"));
         request.setAttribute("username", session.getAttribute("username"));
         request.setAttribute("success", request.getParameter("success"));
+        if ("/map/live".equals(request.getPathInfo())) {
+            handleMapLive(request, response, session);
+            return;
+        }
         String page = adminPage(request);
         try {
             ApiClient api = new ApiClient((String) session.getAttribute("apiToken"));
@@ -324,8 +328,44 @@ public class AdminServlet extends HttpServlet {
             request.setAttribute("users", items(api.get("/api/v1/users?limit=100&offset=0")));
             request.setAttribute("routes", items(api.get("/api/v1/routes?limit=100&offset=0&include_inactive=true")));
             request.setAttribute("vehicles", items(api.get("/api/v1/vehicles?limit=100&offset=0&include_inactive=true")));
-        } else {
+        } else if ("stops".equals(page)) {
             request.setAttribute("stops", items(api.get("/api/v1/stops?limit=100&offset=0&include_inactive=true")));
+        }
+    }
+
+    private void handleMapLive(
+            HttpServletRequest request, HttpServletResponse response, HttpSession session)
+            throws IOException {
+        response.setContentType("application/json");
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        response.setHeader("Cache-Control", "no-store");
+        try {
+            ApiClient api = new ApiClient((String) session.getAttribute("apiToken"));
+            com.google.gson.JsonObject routePage = api.get(
+                    "/api/v1/routes?limit=100&offset=0&include_inactive=true");
+            com.google.gson.JsonObject locationPage = api.get(
+                    "/api/v1/tracking/live?limit=100&offset=0");
+            com.google.gson.JsonObject result = new com.google.gson.JsonObject();
+            result.add("routes", routePage.getAsJsonArray("items"));
+            result.add("locations", locationPage.getAsJsonArray("items"));
+            response.getWriter().write(GSON.toJson(result));
+        } catch (ApiClient.ApiException error) {
+            if (error.getStatusCode() == 401) {
+                session.invalidate();
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            } else {
+                response.setStatus(HttpServletResponse.SC_BAD_GATEWAY);
+            }
+            response.getWriter().write(GSON.toJson(values("error", error.getMessage())));
+        } catch (InterruptedException error) {
+            Thread.currentThread().interrupt();
+            response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+            response.getWriter().write(GSON.toJson(
+                    values("error", "O pedido de atualização do mapa foi interrompido.")));
+        } catch (IOException error) {
+            response.setStatus(HttpServletResponse.SC_BAD_GATEWAY);
+            response.getWriter().write(GSON.toJson(
+                    values("error", "Não foi possível atualizar as posições dos veículos.")));
         }
     }
 
@@ -342,6 +382,9 @@ public class AdminServlet extends HttpServlet {
                 break;
             case "stops":
                 request.setAttribute("pageTitle", "Paragens");
+                break;
+            case "map":
+                request.setAttribute("pageTitle", "Mapa em tempo real");
                 break;
             default:
                 request.setAttribute("pageTitle", "Visão geral");
@@ -361,6 +404,8 @@ public class AdminServlet extends HttpServlet {
                 return "team";
             case "/stops":
                 return "stops";
+            case "/map":
+                return "map";
             default:
                 return "dashboard";
         }
@@ -442,12 +487,12 @@ public class AdminServlet extends HttpServlet {
     private static void setSecurityHeaders(HttpServletResponse response) {
         response.setHeader("X-Content-Type-Options", "nosniff");
         response.setHeader("X-Frame-Options", "DENY");
-        response.setHeader("Referrer-Policy", "no-referrer");
+        response.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
         response.setHeader(
                 "Content-Security-Policy",
-                "default-src 'self'; style-src 'self' https://fonts.googleapis.com; "
-                        + "font-src 'self' https://fonts.gstatic.com; script-src 'self'; "
-                        + "img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; "
+                "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; "
+                        + "font-src 'self' https://fonts.gstatic.com; script-src 'self' https://unpkg.com; "
+                        + "img-src 'self' data: https://tile.openstreetmap.org; connect-src 'self'; frame-ancestors 'none'; "
                         + "base-uri 'self'; form-action 'self'");
     }
 }

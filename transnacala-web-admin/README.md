@@ -1,94 +1,101 @@
-# TransNacala Web Admin
+# Painel administrativo TransNacala
 
-Java server-rendered administration panel for managing accounts, routes,
-stops, route order, vehicles and assignments through the TransNacala REST API.
-The browser never receives an API access token and this project never connects
-directly to MySQL.
+Painel web Java para gerir contas, rotas, paragens, veículos e atribuições
+através da API REST TransNacala. O navegador não recebe o token da API e o
+painel não se liga diretamente ao MySQL.
 
-## Requirements and local run
+## Requisitos
 
-- JDK 11 or newer
-- Maven 3.8+
-- JDK 11 or newer (Tomcat 10.1 requires Java 11+)
-- Apache Tomcat 10.1.x (tested target: 10.1.57)
-- A running TransNacala API with an administrator account
+- JDK 11 ou superior.
+- Maven 3.8 ou superior.
+- Apache Tomcat 10.1.x (versão de referência: 10.1.57).
+- API TransNacala em execução e uma conta com perfil de administrador.
 
-From this directory, build the WAR:
+## Compilar e executar
+
+Na pasta `transnacala-web-admin`, crie o ficheiro WAR:
 
 ```powershell
 mvn clean package
 ```
 
-This application uses Jakarta Servlet 6.0 / JSP 3.1 and is not compatible with
-Tomcat 9 or a `javax.servlet` runtime. Deploy the generated file
-`target/transnacala-web-admin.war` into Tomcat 10.1's `webapps` directory, start
-Tomcat, then open `http://localhost:8080/transnacala-web-admin/`. The WAR name
-sets the context path; the application root redirects to the administrator
-login. Confirm Tomcat reports deployment of `/transnacala-web-admin` in
-`logs/catalina.*.log` before opening the page. If the WAR is renamed, the URL
-context changes to match the new name.
+A aplicação usa Jakarta Servlet 6.0 e JSP 3.1; não é compatível com Tomcat 9
+nem com ambientes `javax.servlet`. Copie
+`target/transnacala-web-admin.war` para a pasta `webapps` do Tomcat 10.1,
+inicie o Tomcat e abra `http://localhost:8080/transnacala-web-admin/`. O nome
+do WAR define o caminho da aplicação. A raiz encaminha para a página de início
+de sessão. Antes de abrir o painel, confirme nos registos
+`logs/catalina.*.log` que o Tomcat publicou a aplicação
+`/transnacala-web-admin`.
 
-Configure the API endpoint for the Tomcat process before starting it:
+Configure o endereço da API no processo do Tomcat antes de o iniciar:
 
 ```powershell
 $env:TRANSNACALA_API_URL = "http://127.0.0.1:8000"
 ```
 
-When Tomcat and the API run on the same computer, the local address above is
-enough; LocalTunnel is not required. Use LocalTunnel or another HTTPS tunnel
-only when Tomcat must reach an API running on a different computer/network, or
-when exposing the development API externally.
+Quando o Tomcat e a API estão no mesmo computador, este endereço local é
+suficiente; não é necessário iniciar o LocalTunnel. Use um túnel HTTPS apenas
+se o Tomcat tiver de aceder a uma API noutra rede ou se a API de
+desenvolvimento precisar de ser exposta externamente.
 
-For IntelliJ's SmartTomcat run configuration, reload the Maven project after
-changing `pom.xml`, then stop and start the SmartTomcat configuration again.
-SmartTomcat creates its own context descriptor and dependency list; an existing
-run can retain the previous `javax.servlet`/JSTL 1.2 libraries even after the
-WAR has been rebuilt.
+No IntelliJ com SmartTomcat, volte a carregar o projeto Maven depois de alterar
+o `pom.xml` e reinicie a configuração SmartTomcat. Uma configuração existente
+pode manter dependências antigas `javax.servlet` ou JSTL 1.2.
 
-## Troubleshooting API login
+## Resolução de problemas
 
-- If the login form says the API cannot be contacted, start FastAPI and confirm
-  `http://127.0.0.1:8000/health/live` responds. Set `TRANSNACALA_API_URL` in
-  Tomcat's run configuration if the API uses another address; restart Tomcat
-  after changing the variable.
-- Uvicorn warnings `Unsupported upgrade request` and `Invalid HTTP request
-  received` during login indicate an HTTP/2 upgrade attempt. The admin client
-  explicitly uses HTTP/1.1 for Uvicorn compatibility; rebuild the WAR and
-  restart/redeploy Tomcat after updating it.
-- If it reports that the database is not configured or unavailable, configure
-  `MYSQL_USER` and `MYSQL_PASSWORD` (or `DATABASE_URL`) in the API process's
-  `.env`, ensure the MySQL service is running, and restart the API. Check
-  `http://127.0.0.1:8000/health/ready` before retrying login.
-- The web admin expects `TRANSNACALA_API_URL` to be the API base address, such
-  as `http://127.0.0.1:8000`, not a Tomcat URL and not an address ending in
+- Se o formulário indicar que não consegue contactar a API, inicie o FastAPI
+  e confirme que `http://127.0.0.1:8000/health/live` responde. Se a API usar
+  outro endereço, defina `TRANSNACALA_API_URL` na configuração do Tomcat e
+  reinicie-o.
+- Se aparecerem os avisos Uvicorn `Unsupported upgrade request` ou
+  `Invalid HTTP request received`, atualize e volte a publicar o WAR; o
+  cliente administrativo usa HTTP/1.1.
+- Se a base de dados não estiver configurada ou acessível, defina
+  `MYSQL_USER` e `MYSQL_PASSWORD` (ou `DATABASE_URL`) no ficheiro `.env` da
+  API, confirme que o MySQL está em execução e reinicie a API. Consulte
+  `http://127.0.0.1:8000/health/ready`.
+- `TRANSNACALA_API_URL` deve apontar para a API, por exemplo
+  `http://127.0.0.1:8000`; não deve apontar para o Tomcat nem terminar em
   `/api/v1`.
+- Se o Tomcat apresentar 404, confirme que
+  `webapps/transnacala-web-admin.war` existe, que a publicação terminou sem
+  erros e que o endereço corresponde ao nome do WAR. A causa de falhas de
+  publicação aparece em `logs/catalina.*.log`.
 
-If Tomcat responds with 404 for the context, verify that
-`webapps/transnacala-web-admin.war` exists, that the application started
-successfully, and that the browser URL matches its WAR filename. A failed
-deployment will have the cause in Tomcat's `logs/catalina.*.log`.
+Em ambientes remotos, proteja tanto a API como o painel com HTTPS. O token da
+API fica apenas na sessão do servidor; o cookie da sessão é HttpOnly e os
+formulários usam tokens CSRF. Não use túneis de desenvolvimento em produção.
 
-For remote environments, use the API's HTTPS URL and protect the admin site
-with HTTPS as well. The API token is kept only in the server-side HTTP session;
-the session cookie is HttpOnly, form submissions use CSRF tokens, and logout
-invalidates the session. Do not expose the development API tunnel as a
-production endpoint.
+## Funcionalidades administrativas
 
-## Admin features
+- Autenticação de administradores e expiração de sessão.
+- Páginas separadas para visão geral, rotas, equipa/frota, paragens e mapa em
+  tempo real.
+- Criação de rotas num formulário modal, edição e desativação no catálogo de
+  passageiros.
+- Gestão da ordem das paragens e adição de novas paragens associadas à rota
+  escolhida.
+- Criação e gestão de contas, alteração de palavra-passe e ativação ou
+  desativação de utilizadores.
+- Criação de veículos e atribuição de motoristas ativos e rotas.
+- Mapa interativo de Nacala-Porto com linhas coloridas a partir das
+  coordenadas das paragens e posições recentes partilhadas pelos motoristas.
+  As posições são atualizadas automaticamente a cada 15 segundos. O mapa
+  requer acesso à Internet para carregar os mapas OpenStreetMap. A aplicação
+  conserva a atribuição visível e permite o envio da referência HTTP exigida
+  pelo serviço público de mapas.
+- Página pública de distribuição Android na raiz do contexto web. Para
+  publicar uma atualização, gere o APK assinado da versão e coloque-o em
+  `src/main/webapp/downloads/transnacala-mobile.apk` antes de criar o WAR.
+  Mantenha esse caminho fixo para que a página pública passe a servir a nova
+  versão automaticamente; aumente `versionCode`/`versionName` e reutilize a
+  mesma chave de assinatura para permitir atualizações nos dispositivos.
+  O APK não é incluído no repositório; sem o ficheiro, a página informa que a
+  aplicação ainda não está disponível. O endereço público do Tomcat pode ser
+  exposto pelo túnel HTTPS, sem expor o MySQL.
 
-- Secure administrator login and session expiry.
-- Separate overview, routes, team/fleet and stops pages; users and vehicles
-  share the team page.
-- Create routes from a modal, edit them, and remove them from the passenger
-  catalogue by deactivating them.
-- Add a stop from a route row; the API creates the stop and ordered route link
-  in one transaction.
-- Manage route stop membership and order from the route page.
-- Create, view, edit, reset passwords and deactivate/reactivate user accounts.
-- View route stop order and create/edit/deactivate/reactivate stops.
-- Create vehicles with API-generated public codes and assign active drivers
-  and routes.
-
-Pagination in the UI requests the first 100 records from each API collection.
-The API remains the authority for permissions, validation, unique codes and
-catalogue synchronization.
+As páginas administrativas pedem até 100 registos por coleção. A API continua
+a ser responsável pelas permissões, validações, códigos únicos e sincronização
+do catálogo.

@@ -1,6 +1,8 @@
 package com.transnacala.app;
 
 import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -73,32 +75,26 @@ public class DetalhesRotaActivity extends AppCompatActivity {
         layoutParagens.removeAllViews();
 
         int numero = 1;
-
         for (Paragem paragem : paragens) {
-
-            TextView txtParagem = new TextView(this);
-
-            txtParagem.setText(
-                    numero + ". " + paragem.getNome()
-            );
-
-            txtParagem.setTextSize(16);
-            txtParagem.setTextColor(
-                    getResources().getColor(
-                            R.color.text_primary
-                    )
-            );
-
-            txtParagem.setPadding(
-                    0,
-                    10,
-                    0,
-                    10
-            );
-
-            layoutParagens.addView(txtParagem);
-
+            View stopRow = LayoutInflater.from(this)
+                    .inflate(R.layout.item_route_stop, layoutParagens, false);
+            TextView stopNumber = stopRow.findViewById(R.id.txtStopNumber);
+            TextView stopName = stopRow.findViewById(R.id.txtStopName);
+            View connector = stopRow.findViewById(R.id.viewStopConnector);
+            stopNumber.setText(String.valueOf(numero));
+            stopName.setText(paragem.getNome());
+            connector.setVisibility(numero == paragens.size() ? View.INVISIBLE : View.VISIBLE);
+            layoutParagens.addView(stopRow);
             numero++;
+        }
+
+        if (paragens.isEmpty()) {
+            TextView emptyState = new TextView(this);
+            emptyState.setText("Ainda não há paragens associadas a esta rota.");
+            emptyState.setTextSize(14);
+            emptyState.setTextColor(getColor(R.color.text_secondary));
+            emptyState.setPadding(8, 8, 8, 8);
+            layoutParagens.addView(emptyState);
         }
     }
 }

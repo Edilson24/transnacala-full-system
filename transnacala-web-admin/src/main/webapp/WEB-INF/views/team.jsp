@@ -1,3 +1,4 @@
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ include file="fragments/layout-start.jspf" %>
 <section class="content-section">
   <div class="section-heading"><div><span class="eyebrow">EQUIPA</span><h2>Utilizadores</h2><p>Crie e administre contas de administradores, motoristas e passageiros.</p></div><span class="section-count"><c:out value="${users.size()}"/> contas</span></div>

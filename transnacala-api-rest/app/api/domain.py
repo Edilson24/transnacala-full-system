@@ -1,8 +1,10 @@
 import re
+from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.responses import Response
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -13,12 +15,14 @@ from app.models.entities import (
     Route,
     RouteStop,
     Stop,
+    LiveLocation,
     SyncChange,
     SyncEntityType,
     SyncOperation,
     SyncSequence,
     User,
     UserRole,
+    TrackingSession,
     Vehicle,
 )
 from app.schemas import (
@@ -42,6 +46,13 @@ from app.schemas import (
 )
 from app.schemas.catalogue import RouteUpdate, StopUpdate, VehicleWrite
 from app.schemas.common import PageMetadata
+from app.schemas.tracking import (
+    LiveLocation as LiveLocationResponse,
+    LiveLocationPage,
+    LocationUpdate,
+    TrackingSessionResponse,
+    TrackingSessionStart,
+)
 from app.services.security import hash_password, verify_access_token
 
 router = APIRouter(prefix="/api/v1", tags=["Administration"])
@@ -618,6 +629,238 @@ def get_sync_changes(
         "next_since_id": items[-1].id if items else since_id,
         "has_more": has_more,
     }
+
+
+TRACKING_LOCATION_TTL = timedelta(minutes=2)
+TRACKING_SESSION_TTL = timedelta(minutes=5)
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def _expire_stale_vehicle_sessions(session: Session, vehicle_id: str, now: datetime) -> None:
+    cutoff = now - TRACKING_SESSION_TTL
+    active_sessions = session.scalars(
+        select(TrackingSession)
+        .where(
+            TrackingSession.vehicle_id == vehicle_id,
+            TrackingSession.ended_at.is_(None),
+        )
+        .with_for_update()
+    ).all()
+    for tracking_session in active_sessions:
+        location = session.get(LiveLocation, vehicle_id)
+        last_seen = (
+            location.updated_at
+            if location is not None and location.session_id == tracking_session.id
+            else tracking_session.started_at
+        )
+        if last_seen.replace(tzinfo=None) < cutoff:
+            tracking_session.ended_at = now
+            if location is not None and location.session_id == tracking_session.id:
+                session.delete(location)
+
+
+def _driver_user(user: User) -> User:
+    if user.role != UserRole.DRIVER:
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "FORBIDDEN", "message": "Driver access is required."},
+        )
+    return user
+
+
+@router.post(
+    "/tracking/sessions",
+    status_code=201,
+    response_model=TrackingSessionResponse,
+)
+def start_tracking_session(
+    payload: TrackingSessionStart,
+    session: Session = Depends(get_db),
+    actor: User = Depends(current_user),
+) -> TrackingSession:
+    driver = _driver_user(actor)
+    vehicle = session.scalar(
+        select(Vehicle)
+        .where(Vehicle.id == str(payload.vehicle_id))
+        .with_for_update()
+    )
+    if (
+        vehicle is None
+        or not vehicle.is_active
+        or vehicle.driver_user_id != driver.id
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "VEHICLE_NOT_ASSIGNED",
+                "message": "An active vehicle assigned to this driver is required.",
+            },
+        )
+
+    now = _utc_now()
+    _expire_stale_vehicle_sessions(session, vehicle.id, now)
+    active_session = session.scalar(
+        select(TrackingSession)
+        .where(
+            TrackingSession.vehicle_id == vehicle.id,
+            TrackingSession.ended_at.is_(None),
+        )
+        .with_for_update()
+    )
+    if active_session is not None:
+        raise _conflict("This vehicle already has an active tracking session.")
+
+    tracking_session = TrackingSession(
+        id=str(uuid4()),
+        vehicle_id=vehicle.id,
+        driver_user_id=driver.id,
+        started_at=now,
+    )
+    session.add(tracking_session)
+    _commit(session)
+    session.refresh(tracking_session)
+    return tracking_session
+
+
+@router.delete(
+    "/tracking/sessions/{session_id}",
+    status_code=204,
+    response_class=Response,
+)
+def end_tracking_session(
+    session_id: UUID,
+    session: Session = Depends(get_db),
+    actor: User = Depends(current_user),
+) -> Response:
+    driver = _driver_user(actor)
+    tracking_session = session.scalar(
+        select(TrackingSession)
+        .where(TrackingSession.id == str(session_id))
+        .with_for_update()
+    )
+    if tracking_session is None:
+        raise _not_found("Tracking session")
+    if tracking_session.driver_user_id != driver.id:
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "FORBIDDEN", "message": "This session belongs to another driver."},
+        )
+    if tracking_session.ended_at is None:
+        tracking_session.ended_at = _utc_now()
+        location = session.get(LiveLocation, tracking_session.vehicle_id)
+        if location is not None and location.session_id == tracking_session.id:
+            session.delete(location)
+        _commit(session)
+    return Response(status_code=204)
+
+
+@router.put(
+    "/tracking/sessions/{session_id}/location",
+    response_model=LiveLocationResponse,
+)
+def update_tracking_location(
+    session_id: UUID,
+    payload: LocationUpdate,
+    session: Session = Depends(get_db),
+    actor: User = Depends(current_user),
+) -> LiveLocation:
+    driver = _driver_user(actor)
+    tracking_session = session.scalar(
+        select(TrackingSession)
+        .where(TrackingSession.id == str(session_id))
+        .with_for_update()
+    )
+    if tracking_session is None:
+        raise _not_found("Tracking session")
+    if tracking_session.driver_user_id != driver.id:
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "FORBIDDEN", "message": "This session belongs to another driver."},
+        )
+    if tracking_session.ended_at is not None:
+        raise _conflict("The tracking session has already ended.")
+
+    location = session.get(LiveLocation, tracking_session.vehicle_id)
+    if location is None:
+        location = LiveLocation(
+            vehicle_id=tracking_session.vehicle_id,
+            session_id=tracking_session.id,
+            **payload.model_dump(),
+        )
+        session.add(location)
+    else:
+        location.session_id = tracking_session.id
+        for field, value in payload.model_dump().items():
+            setattr(location, field, value)
+        location.updated_at = _utc_now()
+    _commit(session)
+    session.refresh(location)
+    vehicle = session.get(Vehicle, location.vehicle_id)
+    route = session.get(Route, vehicle.route_id) if vehicle and vehicle.route_id else None
+    return LiveLocationResponse(
+        **{
+            **payload.model_dump(),
+            "vehicle_id": location.vehicle_id,
+            "session_id": location.session_id,
+            "updated_at": location.updated_at,
+            "vehicle_code": vehicle.code if vehicle else None,
+            "route_id": vehicle.route_id if vehicle else None,
+            "route_name": route.name if route else None,
+        }
+    )
+
+
+@router.get("/tracking/live", response_model=LiveLocationPage)
+def list_live_locations(
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    session: Session = Depends(get_db),
+) -> LiveLocationPage:
+    now = _utc_now()
+    rows = session.execute(
+        select(LiveLocation, Vehicle.code, Vehicle.route_id, Route.name)
+        .join(
+            TrackingSession,
+            (TrackingSession.id == LiveLocation.session_id)
+            & (TrackingSession.vehicle_id == LiveLocation.vehicle_id),
+        )
+        .join(Vehicle, Vehicle.id == LiveLocation.vehicle_id)
+        .outerjoin(Route, Route.id == Vehicle.route_id)
+        .where(
+            TrackingSession.ended_at.is_(None),
+            Vehicle.is_active.is_(True),
+        )
+        .order_by(LiveLocation.updated_at.desc(), Vehicle.code)
+    ).all()
+    fresh_rows = [
+        row for row in rows
+        if row[0].updated_at.replace(tzinfo=None) >= now - TRACKING_LOCATION_TTL
+    ]
+    items = []
+    for row in fresh_rows[offset:offset + limit]:
+        location = row[0]
+        items.append(
+            LiveLocationResponse(
+                latitude=location.latitude,
+                longitude=location.longitude,
+                accuracy_meters=location.accuracy_meters,
+                heading_degrees=location.heading_degrees,
+                speed_meters_per_second=location.speed_meters_per_second,
+                vehicle_id=location.vehicle_id,
+                session_id=location.session_id,
+                updated_at=location.updated_at,
+                vehicle_code=row[1],
+                route_id=row[2],
+                route_name=row[3],
+            )
+        )
+    return LiveLocationPage(
+        items=items,
+        page=PageMetadata(limit=limit, offset=offset, total=len(fresh_rows)),
+    )
 
 
 @router.api_route(

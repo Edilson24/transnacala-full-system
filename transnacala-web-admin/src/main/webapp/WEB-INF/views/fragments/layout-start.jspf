@@ -10,6 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <c:if test="${pageKey == 'map'}"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous"></c:if>
   <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/admin.css">
 </head>
 <body class="admin-page">
@@ -21,6 +22,7 @@
       <a class="nav-link ${pageKey == 'routes' ? 'active' : ''}" href="${pageContext.request.contextPath}/admin/routes"><span class="nav-icon">↗</span> Rotas</a>
       <a class="nav-link ${pageKey == 'team' ? 'active' : ''}" href="${pageContext.request.contextPath}/admin/team"><span class="nav-icon">◎</span> Utilizadores e frota</a>
       <a class="nav-link ${pageKey == 'stops' ? 'active' : ''}" href="${pageContext.request.contextPath}/admin/stops"><span class="nav-icon">⌖</span> Paragens</a>
+      <a class="nav-link ${pageKey == 'map' ? 'active' : ''}" href="${pageContext.request.contextPath}/admin/map"><span class="nav-icon">⌖</span> Mapa em tempo real</a>
     </nav>
     <div class="sidebar-bottom">
       <div class="help-card"><span class="help-spark">✳</span><strong>Gestão de operações</strong><span>Organize rotas, pontos de embarque e equipa num só lugar.</span></div>

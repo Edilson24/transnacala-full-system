@@ -1,6 +1,7 @@
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ include file="fragments/layout-start.jspf" %>
 <section class="content-section">
-  <div class="section-heading"><div><span class="eyebrow">PONTOS DE EMBARQUE</span><h2>Paragens</h2><p>Consulte e atualize os locais e respetivas coordenadas.</p></div><span class="section-count"><c:out value="${stops.size()}"/> paragens</span></div>
+  <div class="section-heading"><div><span class="eyebrow">PONTOS DE EMBARQUE</span><p>Consulte e atualize os locais e respetivas coordenadas.</p></div><span class="section-count"><c:out value="${stops.size()}"/> paragens</span></div>
   <div class="notice notice-info"><strong>Para manter o catálogo organizado:</strong> as novas paragens são criadas dentro da página de <a href="${pageContext.request.contextPath}/admin/routes">Rotas</a>, através da ação “Adicionar paragem” da rota correspondente.</div>
   <article class="panel table-panel">
     <div class="panel-heading panel-heading-inline"><div><h3>Paragens no catálogo</h3><p>Coordenadas e disponibilidade</p></div></div>

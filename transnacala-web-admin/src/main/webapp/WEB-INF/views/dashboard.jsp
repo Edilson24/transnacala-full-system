@@ -1,3 +1,4 @@
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ include file="fragments/layout-start.jspf" %>
 <section class="welcome-banner">
   <div><span class="eyebrow">OPERAÇÕES · NACALA</span><h2>Olá, <c:out value="${username}"/> <span>👋</span></h2><p>Uma visão clara da rede. Escolha uma área para continuar.</p></div>

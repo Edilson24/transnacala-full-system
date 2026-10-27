@@ -335,3 +335,51 @@ td { font-size: 13px; }
   .dialog-form { padding: 20px; }
   .add-existing-stop { align-items: stretch; flex-direction: column; }
 }
+
+.live-map-summary { display: grid; grid-template-columns: minmax(210px, .7fr) minmax(280px, 1fr); gap: 13px; margin: -2px 0 16px; }
+.live-summary-card { display: flex; min-height: 76px; align-items: center; gap: 13px; padding: 13px 17px; }
+.live-summary-icon { display: grid; width: 40px; height: 40px; flex: 0 0 auto; place-items: center; border-radius: 11px; font-size: 19px; }
+.live-summary-card > span:last-child { display: grid; min-width: 0; gap: 3px; }
+.live-summary-card strong { color: #33463b; font: 700 20px Manrope, sans-serif; }
+.live-summary-card small { color: #82908a; font-size: 12px; }
+#live-map-status { font-size: 15px; }
+.live-indicator { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #49a870; box-shadow: 0 0 0 4px rgba(73, 168, 112, .13); }
+.live-summary-icon .live-indicator { width: 11px; height: 11px; }
+.live-map-layout { display: grid; grid-template-columns: minmax(0, 1fr) 315px; align-items: start; gap: 16px; }
+.map-panel { position: relative; min-width: 0; padding: 8px; overflow: hidden; }
+.nacala-map { width: 100%; height: min(72vh, 760px); min-height: 460px; border-radius: 9px; background: #e8eee8; }
+.map-sidebar { display: grid; gap: 13px; }
+.map-info-panel { min-width: 0; padding: 16px; }
+.map-panel-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.map-panel-heading h3 { margin: 0 0 2px; font-size: 15px; }
+.map-panel-heading p { margin: 0; color: #87958d; font-size: 11px; }
+.map-panel-heading .panel-icon { width: 33px; height: 33px; }
+.map-route-legend, .map-live-vehicles { display: grid; max-height: 32vh; gap: 3px; overflow: auto; }
+.map-route-row, .map-vehicle-row { display: flex; min-width: 0; align-items: center; gap: 10px; padding: 9px 5px; border: 0; border-bottom: 1px solid #eff2f0; text-align: left; background: transparent; }
+.map-vehicle-row { width: 100%; cursor: pointer; }
+.map-vehicle-row:hover { border-radius: 7px; background: #f5f9f6; }
+.map-route-swatch { width: 25px; height: 4px; flex: 0 0 auto; border-radius: 5px; background: var(--route-color); }
+.map-route-swatch-inactive { background: repeating-linear-gradient(90deg, var(--route-color), var(--route-color) 6px, transparent 6px, transparent 10px); }
+.map-route-details, .map-vehicle-details { display: grid; min-width: 0; gap: 2px; }
+.map-route-details strong, .map-vehicle-details strong { overflow: hidden; color: #34443c; font-size: 12px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.map-route-details small, .map-vehicle-details small { overflow: hidden; color: #87958d; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.map-vehicle-dot { width: 10px; height: 10px; flex: 0 0 auto; border: 2px solid white; border-radius: 50%; background: var(--route-color); box-shadow: 0 0 0 1px var(--route-color); }
+.map-empty { margin: 8px 0; color: #89968f; font-size: 12px; line-height: 1.6; }
+.map-update-note { display: flex; align-items: center; gap: 9px; margin: 0; padding: 2px 5px; color: #7a8a80; font-size: 11px; }
+.vehicle-marker-wrap { border: 0; background: transparent; }
+.vehicle-map-marker { display: grid; width: 36px; height: 36px; place-items: center; border: 2px solid white; border-radius: 11px 11px 11px 4px; color: #fff; background: var(--vehicle-color, #1d7453); box-shadow: 0 2px 8px rgba(16, 43, 29, .35); font-size: 17px; }
+.map-popup { display: grid; gap: 4px; min-width: 135px; }
+.map-popup strong { font-size: 14px; }
+.map-popup span, .map-popup small { color: #68786e; font-size: 12px; }
+.live-map-page .section-heading { align-items: center; }
+
+@media (max-width: 1050px) {
+  .live-map-layout { grid-template-columns: minmax(0, 1fr) 270px; }
+}
+@media (max-width: 760px) {
+  .live-map-summary { grid-template-columns: 1fr; }
+  .live-map-layout { grid-template-columns: 1fr; }
+  .nacala-map { height: 58vh; min-height: 360px; }
+  .map-sidebar { grid-template-columns: 1fr; }
+  .map-route-legend, .map-live-vehicles { max-height: 240px; }
+}

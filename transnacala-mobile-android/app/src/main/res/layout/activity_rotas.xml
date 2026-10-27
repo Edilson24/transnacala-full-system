@@ -49,6 +49,14 @@
             android:text="Sincronizar agora"
             android:textAllCaps="false" />
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnLiveMap"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Ver chapas no mapa"
+            android:textAllCaps="false" />
+
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
