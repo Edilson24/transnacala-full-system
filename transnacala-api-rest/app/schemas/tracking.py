@@ -19,6 +19,10 @@ class TrackingSessionResponse(BaseModel):
     ended_at: datetime | None = None
 
 
+class ActiveTrackingSessionResponse(BaseModel):
+    session: TrackingSessionResponse | None
+
+
 class LocationUpdate(BaseModel):
     latitude: Decimal = Field(ge=-90, le=90, max_digits=10, decimal_places=7)
     longitude: Decimal = Field(ge=-180, le=180, max_digits=10, decimal_places=7)

@@ -163,7 +163,9 @@ anunciar/limitar os ficheiros que vai modificar.
   incrementais, carrega detalhes pelo contrato da API, aplica cada página e o
   cursor na mesma transação SQLite, preserva IDs locais, aplica tombstones e
   retenta falhas temporárias. Configuração exige HTTPS; a lista de rotas permite
-  sincronizar manualmente ou continuar offline. Compilação Android concluída.
+  sincronizar manualmente ou continuar offline. A sincronização é solicitada ao
+  iniciar a aplicação, ao regressar à tela de rotas e periodicamente em segundo
+  plano. Compilação Android concluída.
 - [x] **P3.3 — Implementar experiências por papel.** Passageiros consultam
   rotas/paragens em cache e podem solicitar atualização; motoristas autenticam
   pela API, têm o perfil e veículo ativo identificados e controlam explicitamente
@@ -177,7 +179,9 @@ anunciar/limitar os ficheiros que vai modificar.
   atualizar posição autenticada do veículo; validar latitude/longitude,
   propriedade do veículo, frequência e atualização mais recente. Serializar
   início de sessão por veículo para impedir sessões concorrentes ativas. TTLs
-  encerram sessões sem atualização e testes de API cobrem autorização, ciclo de
+  encerram sessões sem atualização; o Android recupera a sessão ativa no login,
+  retoma o serviço e pode terminar a sessão após reinstalação. Repetir o início
+  devolve a sessão atual em vez de bloquear. Testes cobrem autorização, ciclo de
   vida, localização recente e remoção ao terminar.
 - [x] **P4.2 — Mostrar veículos ao vivo.** API paginada expõe somente posições
   recentes de sessões ativas; mapa Android desenha as rotas pelas coordenadas
@@ -205,6 +209,8 @@ anunciar/limitar os ficheiros que vai modificar.
 - [ ] **P5.2 — Publicar atualização Android.** Gerar uma versão de release
   assinada e copiá-la para o caminho público fixo; validar o download HTTPS e a
   atualização sobre uma instalação anterior com a mesma chave de assinatura.
+  Workflow automático por tag criado; falta configurar os secrets de assinatura,
+  publicar uma tag e testar a distribuição pública.
 
 ## Critérios globais de conclusão
 

@@ -70,6 +70,7 @@ public class RotasActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         atualizarRotas();
+        sincronizar();
     }
 
     private void sincronizar() {

@@ -87,14 +87,17 @@ formulários usam tokens CSRF. Não use túneis de desenvolvimento em produção
   conserva a atribuição visível e permite o envio da referência HTTP exigida
   pelo serviço público de mapas.
 - Página pública de distribuição Android na raiz do contexto web. Para
-  publicar uma atualização, gere o APK assinado da versão e coloque-o em
-  `src/main/webapp/downloads/transnacala-mobile.apk` antes de criar o WAR.
-  Mantenha esse caminho fixo para que a página pública passe a servir a nova
-  versão automaticamente; aumente `versionCode`/`versionName` e reutilize a
-  mesma chave de assinatura para permitir atualizações nos dispositivos.
-  O APK não é incluído no repositório; sem o ficheiro, a página informa que a
-  aplicação ainda não está disponível. O endereço público do Tomcat pode ser
-  exposto pelo túnel HTTPS, sem expor o MySQL.
+  publicar uma atualização, aumente `versionCode`/`versionName` em
+  `transnacala-mobile-android/app/build.gradle.kts` e crie/envie uma tag
+  `mobile-vX.Y.Z`. O workflow GitHub Actions compila o APK release assinado e
+  publica-o como `transnacala-mobile.apk` numa GitHub Release; o botão da
+  página descarrega sempre o artefacto da última release. Configure os secrets
+  `ANDROID_SIGNING_KEYSTORE_BASE64`, `ANDROID_SIGNING_STORE_PASSWORD`,
+  `ANDROID_SIGNING_KEY_ALIAS` e `ANDROID_SIGNING_KEY_PASSWORD` em **Settings >
+  Secrets and variables > Actions**. Use uma chave de assinatura de release
+  protegida e preserve-a para permitir atualizações sobre instalações
+  existentes. O endereço público do painel pode ser exposto pelo túnel HTTPS,
+  sem expor o MySQL.
 
 As páginas administrativas pedem até 100 registos por coleção. A API continua
 a ser responsável pelas permissões, validações, códigos únicos e sincronização

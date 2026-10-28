@@ -115,6 +115,7 @@ public class DriverActivity extends AppCompatActivity {
             int offset = 0;
             String foundVehicleId = null;
             String foundCode = null;
+            String foundSessionId = "";
             while (true) {
                 JSONObject page = client.get("/api/v1/vehicles?limit=100&offset=" + offset);
                 JSONArray vehicles = page.getJSONArray("items");
@@ -132,9 +133,19 @@ public class DriverActivity extends AppCompatActivity {
                 }
                 offset += vehicles.length();
             }
+            if (foundVehicleId != null) {
+                JSONObject activeSession = client.get(
+                        "/api/v1/tracking/sessions/active?vehicle_id=" + foundVehicleId
+                );
+                JSONObject session = activeSession.optJSONObject("session");
+                if (session != null) {
+                    foundSessionId = session.getString("id");
+                }
+            }
 
             String id = foundVehicleId;
             String code = foundCode;
+            String activeId = foundSessionId;
             runOnUiThread(() -> {
                 setBusy(false);
                 vehicleId = id;
@@ -147,13 +158,14 @@ public class DriverActivity extends AppCompatActivity {
                     status.setText("A sua conta ainda não tem um veículo ativo atribuído.");
                     shareButton.setEnabled(false);
                 } else {
-                    status.setText("Pronto para iniciar a partilha da localização.");
                     shareButton.setEnabled(true);
-                    sessionId = SessionManager.getActiveSessionId(this);
+                    sessionId = activeId;
+                    SessionManager.setActiveSessionId(this, activeId);
                     if (!sessionId.isEmpty()) {
                         startLocationService(sessionId);
                         showSharingState(true);
                     } else {
+                        stopService(new Intent(this, LocationShareService.class));
                         showSharingState(false);
                     }
                 }
@@ -320,8 +332,8 @@ public class DriverActivity extends AppCompatActivity {
             driverControls.setVisibility(View.VISIBLE);
             driverName.setText(SessionManager.getFullName(this));
             driverUsername.setText("@" + SessionManager.getUsername(this));
-            sessionId = SessionManager.getActiveSessionId(this);
-            loadAssignedVehicle(SessionManager.getUserId(this));
+            setBusy(true);
+            new Thread(() -> loadAssignedVehicle(SessionManager.getUserId(this))).start();
         }
     }
 

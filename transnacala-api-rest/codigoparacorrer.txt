@@ -1,10 +1,13 @@
-Para ejecutar tu aplicación FastAPI:
+Para executar tua aplicação FastAPI:
 python -m uvicorn main:app --reload --port 8000
 
-Para exponer tu aplicación FastAPI a través de un túnel seguro usando Cloudflare, puedes usar los siguientes comandos:
+Para expôr tua aplicação FastAPI a través de un túnel seguro usando Cloudflare, puedes usar los siguientes comandos:
 cloudflared tunnel --url http://localhost:8000
 cloudflared tunnel --protocol http2 --url http://localhost:8000
 
-Para criar un subdominio específico para tu aplicación, puedes usar el siguiente comando:
+Para criar un subdomínio específico para tua aplicação, podes usar o seguinte comando:
 lt --port 8000 --subdomain transnacala-api
 lt --port 8000 --subdomain transnacala-api --local-host 127.0.0.1
+
+Para publicar a página de download da aplicação transnacala-apk, você pode usar o seguinte comando:
+lt --port 8080 --subdomain transnacala-apk

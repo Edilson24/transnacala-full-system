@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 import pytest
@@ -271,6 +272,18 @@ def test_tracking_session_lifecycle_and_live_locations(client: TestClient) -> No
         json={"vehicle_id": str(uuid4())},
     ).status_code == 403
 
+    stale_session_id = str(uuid4())
+    with client.app.state.session_factory() as session:
+        session.add(
+            TrackingSession(
+                id=stale_session_id,
+                vehicle_id=vehicle["id"],
+                driver_user_id=driver["id"],
+                started_at=datetime.now(timezone.utc).replace(tzinfo=None)
+                - timedelta(minutes=10),
+            )
+        )
+        session.commit()
     started = client.post(
         "/api/v1/tracking/sessions",
         headers=driver_headers,
@@ -278,11 +291,20 @@ def test_tracking_session_lifecycle_and_live_locations(client: TestClient) -> No
     )
     assert started.status_code == 201
     session_id = started.json()["id"]
-    assert client.post(
+    with client.app.state.session_factory() as session:
+        assert session.get(TrackingSession, stale_session_id).ended_at is not None
+    assert client.get(
+        "/api/v1/tracking/sessions/active",
+        headers=driver_headers,
+        params={"vehicle_id": vehicle["id"]},
+    ).json()["session"]["id"] == session_id
+    reconnected = client.post(
         "/api/v1/tracking/sessions",
         headers=driver_headers,
         json={"vehicle_id": vehicle["id"]},
-    ).status_code == 409
+    )
+    assert reconnected.status_code == 200
+    assert reconnected.json()["id"] == session_id
 
     location = client.put(
         f"/api/v1/tracking/sessions/{session_id}/location",
@@ -323,6 +345,11 @@ def test_tracking_session_lifecycle_and_live_locations(client: TestClient) -> No
         headers=driver_headers,
         json={"latitude": -14.542, "longitude": 40.672},
     ).status_code == 409
+    assert client.get(
+        "/api/v1/tracking/sessions/active",
+        headers=driver_headers,
+        params={"vehicle_id": vehicle["id"]},
+    ).json()["session"] is None
     with client.app.state.session_factory() as session:
         assert session.scalar(select(LiveLocation)) is None
         tracking_session = session.get(TrackingSession, session_id)

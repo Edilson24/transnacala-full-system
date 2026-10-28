@@ -100,7 +100,7 @@ public class LiveMapActivity extends AppCompatActivity {
             try {
                 ApiClient client = new ApiClient(ApiConfig.getBaseUrl(this), null);
                 JSONObject routeResponse = client.get(
-                        "/api/v1/routes?limit=100&offset=0&include_inactive=true"
+                        "/api/v1/routes?limit=100&offset=0"
                 );
                 JSONObject locationResponse = client.get(
                         "/api/v1/tracking/live?limit=100&offset=0"

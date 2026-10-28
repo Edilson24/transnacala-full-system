@@ -64,24 +64,27 @@ public class LocationShareService extends Service implements LocationListener {
             return START_NOT_STICKY;
         }
 
-        sessionId = intent.getStringExtra(EXTRA_SESSION_ID);
+        String requestedSessionId = intent.getStringExtra(EXTRA_SESSION_ID);
         String token = SessionManager.getToken(this);
-        if (sessionId == null || sessionId.isEmpty() || token.isEmpty()) {
+        if (requestedSessionId == null || requestedSessionId.isEmpty() || token.isEmpty()) {
             Log.e(TAG, "Tracking session or authenticated token is unavailable.");
             stopSharing();
             return START_NOT_STICKY;
         }
-        if (locationUpdatesRequested && sessionId.equals(
-                intent.getStringExtra(EXTRA_SESSION_ID))) {
+        if (locationUpdatesRequested && requestedSessionId.equals(sessionId)) {
             return START_NOT_STICKY;
         }
-        locationUpdatesRequested = true;
+        if (locationUpdatesRequested && locationManager != null) {
+            locationManager.removeUpdates(this);
+        }
+        sessionId = requestedSessionId;
         apiClient = new ApiClient(ApiConfig.getBaseUrl(this), token);
         requestLocationUpdates();
         return START_NOT_STICKY;
     }
 
     private void requestLocationUpdates() {
+        locationUpdatesRequested = false;
         if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
             Log.e(TAG, "Fine location permission was revoked during an active session.");
@@ -102,6 +105,7 @@ public class LocationShareService extends Service implements LocationListener {
             if (!requested) {
                 updateNotification("Ative a localização do dispositivo.");
             } else {
+                locationUpdatesRequested = true;
                 updateNotification("Partilha de localização ativa.");
             }
         } catch (SecurityException exception) {

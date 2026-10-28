@@ -98,5 +98,8 @@ que partilham a posição recentemente. Ao terminar uma sessão, a posição
 publicada é removida; as sessões sem atualizações expiram. Coordenadas GPS e
 valores dos sensores são arredondados à precisão das colunas antes da
 validação, evitando rejeitar leituras com casas decimais extra. Os testes de
-localização usam SQLite em memória. Antes de usar em produção, confirme no
+localização usam SQLite em memória. O endpoint autenticado
+`GET /api/v1/tracking/sessions/active?vehicle_id=...` permite ao Android
+recuperar a sessão após reiniciar ou reinstalar; repetir o pedido de início
+retoma a sessão ativa em vez de falhar com conflito. Antes de usar em produção, confirme no
 MySQL configurado o comportamento dos bloqueios de linhas e das datas.

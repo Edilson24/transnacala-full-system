@@ -21,6 +21,7 @@ def test_openapi_contract_covers_all_client_domains() -> None:
         "/api/v1/vehicles/{vehicle_id}/assignment",
         "/api/v1/sync/changes",
         "/api/v1/tracking/sessions",
+        "/api/v1/tracking/sessions/active",
         "/api/v1/tracking/live",
     }.issubset(contract["paths"])
     assert contract["components"]["schemas"]["User"]["properties"]["id"] == {

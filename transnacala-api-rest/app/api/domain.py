@@ -47,6 +47,7 @@ from app.schemas import (
 from app.schemas.catalogue import RouteUpdate, StopUpdate, VehicleWrite
 from app.schemas.common import PageMetadata
 from app.schemas.tracking import (
+    ActiveTrackingSessionResponse,
     LiveLocation as LiveLocationResponse,
     LiveLocationPage,
     LocationUpdate,
@@ -639,8 +640,11 @@ def _utc_now() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
-def _expire_stale_vehicle_sessions(session: Session, vehicle_id: str, now: datetime) -> None:
+def _expire_stale_vehicle_sessions(
+    session: Session, vehicle_id: str, now: datetime
+) -> bool:
     cutoff = now - TRACKING_SESSION_TTL
+    expired = False
     active_sessions = session.scalars(
         select(TrackingSession)
         .where(
@@ -658,8 +662,38 @@ def _expire_stale_vehicle_sessions(session: Session, vehicle_id: str, now: datet
         )
         if last_seen.replace(tzinfo=None) < cutoff:
             tracking_session.ended_at = now
+            expired = True
             if location is not None and location.session_id == tracking_session.id:
                 session.delete(location)
+    return expired
+
+
+def _active_vehicle_session(
+    session: Session, vehicle_id: str, now: datetime
+) -> tuple[TrackingSession | None, bool]:
+    changed = _expire_stale_vehicle_sessions(session, vehicle_id, now)
+    if changed:
+        session.flush()
+    active_sessions = session.scalars(
+        select(TrackingSession)
+        .where(
+            TrackingSession.vehicle_id == vehicle_id,
+            TrackingSession.ended_at.is_(None),
+        )
+        .order_by(TrackingSession.started_at.desc(), TrackingSession.id.desc())
+        .with_for_update()
+    ).all()
+    if not active_sessions:
+        return None, changed
+
+    active_session = active_sessions[0]
+    for duplicate in active_sessions[1:]:
+        duplicate.ended_at = now
+        changed = True
+        location = session.get(LiveLocation, vehicle_id)
+        if location is not None and location.session_id == duplicate.id:
+            session.delete(location)
+    return active_session, changed
 
 
 def _driver_user(user: User) -> User:
@@ -678,6 +712,7 @@ def _driver_user(user: User) -> User:
 )
 def start_tracking_session(
     payload: TrackingSessionStart,
+    response: Response,
     session: Session = Depends(get_db),
     actor: User = Depends(current_user),
 ) -> TrackingSession:
@@ -701,17 +736,12 @@ def start_tracking_session(
         )
 
     now = _utc_now()
-    _expire_stale_vehicle_sessions(session, vehicle.id, now)
-    active_session = session.scalar(
-        select(TrackingSession)
-        .where(
-            TrackingSession.vehicle_id == vehicle.id,
-            TrackingSession.ended_at.is_(None),
-        )
-        .with_for_update()
-    )
+    active_session, changed = _active_vehicle_session(session, vehicle.id, now)
     if active_session is not None:
-        raise _conflict("This vehicle already has an active tracking session.")
+        if changed:
+            _commit(session)
+        response.status_code = 200
+        return active_session
 
     tracking_session = TrackingSession(
         id=str(uuid4()),
@@ -723,6 +753,42 @@ def start_tracking_session(
     _commit(session)
     session.refresh(tracking_session)
     return tracking_session
+
+
+@router.get(
+    "/tracking/sessions/active",
+    response_model=ActiveTrackingSessionResponse,
+)
+def get_active_tracking_session(
+    vehicle_id: UUID,
+    session: Session = Depends(get_db),
+    actor: User = Depends(current_user),
+) -> ActiveTrackingSessionResponse:
+    driver = _driver_user(actor)
+    vehicle = session.scalar(
+        select(Vehicle)
+        .where(Vehicle.id == str(vehicle_id))
+        .with_for_update()
+    )
+    if (
+        vehicle is None
+        or not vehicle.is_active
+        or vehicle.driver_user_id != driver.id
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "VEHICLE_NOT_ASSIGNED",
+                "message": "An active vehicle assigned to this driver is required.",
+            },
+        )
+
+    active_session, changed = _active_vehicle_session(
+        session, vehicle.id, _utc_now()
+    )
+    if changed:
+        _commit(session)
+    return ActiveTrackingSessionResponse(session=active_session)
 
 
 @router.delete(

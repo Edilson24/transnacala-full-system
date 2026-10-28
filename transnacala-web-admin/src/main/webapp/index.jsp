@@ -1,8 +1,4 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%
-  boolean mobileApkAvailable =
-      application.getResource("/downloads/transnacala-mobile.apk") != null;
-%>
 <!DOCTYPE html>
 <html lang="pt">
 <head>
@@ -26,18 +22,11 @@
       <p class="eyebrow">MOBILIDADE EM NACALA</p>
       <h1 id="download-title">A sua viagem começa aqui.</h1>
       <p class="intro">Consulte rotas, paragens e veículos a partilhar a localização em tempo real.</p>
-      <% if (mobileApkAvailable) { %>
-        <a class="download-button" href="<%= request.getContextPath() %>/downloads/transnacala-mobile.apk" download>
-          <span class="download-icon" aria-hidden="true">↓</span>
-          <span><strong>Descarregar para Android</strong><small>Última versão publicada · ficheiro APK</small></span>
-        </a>
-        <p class="install-note">Depois de descarregar, abra o ficheiro APK no seu dispositivo Android para instalar a aplicação.</p>
-      <% } else { %>
-        <div class="unavailable" role="status">
-          <strong>A aplicação estará disponível em breve.</strong>
-          <span>A equipa está a preparar a próxima versão para Android.</span>
-        </div>
-      <% } %>
+      <a class="download-button" href="https://github.com/Edilson24/transnacala-full-system/releases/latest/download/transnacala-mobile.apk">
+        <span class="download-icon" aria-hidden="true">↓</span>
+        <span><strong>Descarregar para Android</strong><small>Última versão publicada · ficheiro APK</small></span>
+      </a>
+      <p class="install-note">Depois de descarregar, abra o ficheiro APK no seu dispositivo Android para instalar a aplicação.</p>
     </section>
 
     <footer class="download-footer">

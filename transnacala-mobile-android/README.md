@@ -25,6 +25,9 @@ Na lista de rotas, a opção **Sincronizar agora** inicia uma tentativa imediata
 de sincronização. Sem ligação, o catálogo já guardado no SQLite continua
 disponível. A sincronização incremental usa `/api/v1/sync/changes`, aplica
 cada página numa transação local e só depois atualiza o cursor guardado.
+O catálogo também é sincronizado ao abrir a aplicação, ao regressar à tela de
+rotas e periodicamente em segundo plano; as tarefas aguardam uma ligação à
+Internet.
 
 ## Contas e acesso
 
@@ -36,6 +39,9 @@ O motorista inicia e termina a partilha da localização de forma explícita.
 Durante a partilha, a aplicação mantém um serviço em primeiro plano e envia
 as posições à API. Uma notificação persistente indica quando a partilha está
 ativa. É necessária a permissão de localização precisa do dispositivo.
+Ao autenticar, a aplicação recupera a sessão ativa do veículo no servidor:
+após reinstalar ou reiniciar, o serviço retoma a publicação e o botão continua
+a poder encerrar essa mesma sessão.
 
 Na área de rotas, **Ver chapas no mapa** abre o mapa OpenStreetMap com os
 percursos desenhados pelas coordenadas das paragens e os veículos que estão
@@ -47,3 +53,12 @@ partilhada é removida; as sessões sem atualizações também expiram.
 
 Os detalhes de cada rota apresentam as paragens numa sequência visual de
 percurso, em vez de uma lista simples.
+
+## Publicar uma versão Android
+
+O workflow `.github/workflows/release-mobile.yml` cria e publica o APK release
+assinado quando uma tag `mobile-vMAJOR.MINOR.PATCH` é enviada ao GitHub. Antes
+da primeira publicação, configure os quatro secrets de assinatura indicados no
+README do painel web. A página pública do painel aponta para a última GitHub
+Release, por isso o WAR só precisa ser republicado uma vez com o novo link; as
+versões seguintes ficam disponíveis após a execução bem-sucedida do workflow.

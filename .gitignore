@@ -1,0 +1,56 @@
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+**/local.properties
+**/*.jks
+**/*.keystore
+**/*.p12
+**/*.pem
+**/*.key
+**/signing.properties
+**/key.properties
+**/*credentials*.json
+**/secrets/
+
+# IDE and operating-system state
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.DS_Store
+Thumbs.db
+
+# Build outputs and caches
+.gradle/
+**/.gradle/
+**/build/
+**/target/
+**/.pytest_cache/
+**/__pycache__/
+**/*.py[cod]
+**/.coverage
+**/coverage.xml
+**/htmlcov/
+
+# Local database files and dumps (keep versioned schema and migrations)
+*.db
+*.sqlite
+*.sqlite3
+*.dump
+*.sql.gz
+*.dump.sql
+*.data.sql
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.swp
+*.bak
+
+# Android release binaries are published by the release workflow
+*.apk
+*.aab
